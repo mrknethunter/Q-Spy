@@ -1,0 +1,57 @@
+{
+  "record_id": 5649212,
+  "version": "v1.0.0",
+  "doi": "10.5281/zenodo.5649212",
+  "license": "CC-BY-4.0",
+  "source": "https://zenodo.org/records/5649212",
+  "files": [
+    {
+      "name": "H1_O1.csv",
+      "url": "https://zenodo.org/records/5649212/files/H1_O1.csv?download=1",
+      "size_bytes": 15963563,
+      "md5": "91963313b1574e083bc58915e0aa8ca1"
+    },
+    {
+      "name": "H1_O2.csv",
+      "url": "https://zenodo.org/records/5649212/files/H1_O2.csv?download=1",
+      "size_bytes": 73098153,
+      "md5": "1c3eb9432107c6fee671cc76ad632e69"
+    },
+    {
+      "name": "H1_O3a.csv",
+      "url": "https://zenodo.org/records/5649212/files/H1_O3a.csv?download=1",
+      "size_bytes": 90238691,
+      "md5": "29aea278b622cd97496971f7c07f7d6a"
+    },
+    {
+      "name": "H1_O3b.csv",
+      "url": "https://zenodo.org/records/5649212/files/H1_O3b.csv?download=1",
+      "size_bytes": 111575139,
+      "md5": "590290fe3c7ddf8cd9fa85c3a09cd5e4"
+    },
+    {
+      "name": "L1_O1.csv",
+      "url": "https://zenodo.org/records/5649212/files/L1_O1.csv?download=1",
+      "size_bytes": 27212877,
+      "md5": "34c7d08070f302d3b366767610748f40"
+    },
+    {
+      "name": "L1_O2.csv",
+      "url": "https://zenodo.org/records/5649212/files/L1_O2.csv?download=1",
+      "size_bytes": 65785621,
+      "md5": "df0a831cb79509e2aae38a4651c796fc"
+    },
+    {
+      "name": "L1_O3a.csv",
+      "url": "https://zenodo.org/records/5649212/files/L1_O3a.csv?download=1",
+      "size_bytes": 142258875,
+      "md5": "3d3d0409817499c84fb2e0a2b211b5a5"
+    },
+    {
+      "name": "L1_O3b.csv",
+      "url": "https://zenodo.org/records/5649212/files/L1_O3b.csv?download=1",
+      "size_bytes": 216062292,
+      "md5": "90d0bc16448bca72818ed9abf267979c"
+    }
+  ]
+}
