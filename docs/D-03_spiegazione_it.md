@@ -1,40 +1,46 @@
-# D03 — Spiegazione dell’implementazione
+# D-03 — Trasformazioni delle feature senza leakage
 
-## 1. A cosa serve D03
+## Feature e ordine
 
-D03 prepara i dati numerici dei glitch prima che vengano utilizzati dagli esperimenti di Q-Spy. Ogni riga rappresenta un trigger e contiene sette misure provenienti dai parametri Omicron. Queste misure possono avere scale molto diverse: per esempio, una frequenza e un’ampiezza non hanno necessariamente valori confrontabili. Il compito trasforma quindi i dati in una matrice ordinata e numericamente più adatta ai modelli del progetto.
+La proposta ufficiale, sezione 4.2, indica sette quantità Omicron, tutte
+trasformate con `log10`: SNR, frequenza di picco, frequenza centrale,
+bandwidth, durata, Q-value e ampiezza. L’ordine è mantenuto in
+`FEATURE_COLUMNS` (`snr`, `peak_frequency`, `central_frequency`, `bandwidth`,
+`duration`, `q_value`, `amplitude`). La proposta non definisce i nomi delle
+colonne del DataFrame: questi nomi `snake_case` sono provvisori e vanno
+confrontati con lo schema prodotto da D-02 quando disponibile.
 
-## 2. Quali dati vengono trasformati
+`make_features(df, scaler=None)` seleziona esclusivamente le sette colonne,
+ignorando metadati e colonne aggiuntive, e mantiene l’ordine delle righe. La
+funzione restituisce una matrice NumPy `float64` di forma `(N, 7)` e lo scaler
+usato. Non modifica identificativi e non elimina righe.
 
-La proposta del progetto elenca sette feature: SNR, frequenza di picco, frequenza centrale, bandwidth, durata, Q-value e ampiezza. Nel codice ho usato nomi provvisori in formato `snake_case`: `snr`, `peak_frequency`, `central_frequency`, `bandwidth`, `duration`, `q_value` e `amplitude`.
+## Pipeline matematica
 
-Questi nomi sono raccolti nella costante `FEATURE_COLUMNS` all’inizio di `features/transforms.py`. Tenerli in un solo punto rende semplice adattare il codice quando D02 stabilirà i nomi definitivi delle colonne. La funzione ignora le altre colonne del DataFrame, come ID, label, detector e tempo GPS, perché non sono le sette misure da passare come input al modello.
+Per la feature `j`, dopo la trasformazione logaritmica si calcolano mediana e
+intervallo interquartile sui dati di fit:
 
-## 3. La funzione principale
+```text
+u_j = log10(x_j)
+z_j = (u_j - median_j) / IQR_j
+X_tilde_j = clip(z_j, -1, 1)
+```
 
-La funzione pubblica è `make_features(df, scaler=None)`. Riceve un DataFrame e, facoltativamente, uno scaler già addestrato. Restituisce una coppia: la matrice trasformata `X_tilde` e lo scaler utilizzato.
+Il componente usa `sklearn.preprocessing.RobustScaler` con quantili 25 e 75,
+poi clipping netto a `[-1, 1]`. Non applica il bandwidth quantistico `s` né
+`theta = s * pi * X_tilde`: questi appartengono al componente quantistico.
+Non applica `tanh` e non apprende parametri di compressione adattivi.
 
-La matrice restituita ha forma `(N, 7)`, dove `N` è il numero di righe ricevute, ed è di tipo `float64`. La funzione controlla che l’input sia un DataFrame, che contenga tutte le colonne richieste e che abbia almeno una riga. Controlla inoltre che i valori siano finiti e strettamente positivi, perché il logaritmo in base 10 non è definito per zero o numeri negativi.
+Per un feature costante o con IQR nullo, `RobustScaler` usa una scala pari a 1
+per evitare divisioni per zero; la feature costante del training diventa zero
+dopo il centraggio. Eventuali valori diversi in validation/test vengono
+trasformati con la stessa scala e poi limitati dal clipping.
 
-## 4. Perché si applica il logaritmo
+## Fit senza leakage
 
-Le sette misure possono avere distribuzioni molto sbilanciate e code lunghe: pochi trigger possono avere valori molto più grandi della maggior parte degli altri. Applicare `log10` comprime le differenze di scala e riduce l’influenza dei valori estremi. Questa trasformazione è indicata nella proposta del progetto per tutte le sette feature.
-
-Il logaritmo viene applicato prima dello scaler. Per questo, i valori originali devono essere positivi. Se D02 produce valori pari a zero o negativi per una delle feature, sarà necessario confrontarsi con la specifica e decidere come gestirli; il codice attuale segnala l’errore invece di correggere i dati silenziosamente.
-
-## 5. Come funziona lo scaler robusto
-
-Dopo il logaritmo, il codice usa `RobustScaler` di scikit-learn con intervallo interquartile dal 25° al 75° percentile. In pratica, ogni feature viene centrata usando la mediana e ridimensionata usando l’IQR. Queste statistiche sono meno sensibili ai valori estremi rispetto a media e deviazione standard.
-
-Se `scaler` non viene passato, la funzione crea un nuovo `RobustScaler` e lo adatta ai dati ricevuti. Lo scaler conserva le statistiche apprese, che vengono restituite al chiamante insieme alla matrice. Se invece viene passato uno scaler già adattato, la funzione lo usa per trasformare i dati senza ricalcolare le statistiche.
-
-## 6. Come si evita il data leakage
-
-Il data leakage si verifica quando informazioni provenienti da validation o test influenzano il processo di preparazione dei dati usato per il training. Per evitarlo, lo scaler deve essere adattato solo sulle righe di training. Il codice non può sapere autonomamente quale partizione contiene: è responsabilità di chi chiama la funzione passare i dati corretti.
-
-Il flusso previsto è: chiamare `make_features` sul training set senza scaler, conservare lo scaler restituito e riutilizzarlo per trasformare validation e test. In questo modo le statistiche restano quelle del training. Se si chiama la funzione senza scaler su validation o test, la funzione adatterà un nuovo scaler su quei dati e il flusso non rispetterà il requisito di assenza di leakage.
-
-Esempio d’uso:
+Senza scaler, la funzione adatta mediana e IQR sulle righe ricevute. Il
+chiamante deve passare solo il training set. Per validation e test deve
+riutilizzare l’istanza restituita:
 
 ```python
 X_train, scaler = make_features(train_df)
@@ -42,26 +48,41 @@ X_validation, _ = make_features(validation_df, scaler=scaler)
 X_test, _ = make_features(test_df, scaler=scaler)
 ```
 
-## 7. Perché si usa `tanh`
+Nel ramo di trasformazione non viene eseguito alcun fit; l’istanza non viene
+modificata. Il test anti-leakage confronta le statistiche di training con
+validation differenti, ne controlla l’invarianza dopo transform e verifica che
+un fit deliberatamente contaminato sul train più validation dia statistiche
+diverse.
 
-La robust scaling da sola non garantisce che i valori siano compresi tra `-1` e `1`. La task richiede quell’intervallo, ma non specifica la formula per ottenerlo. In questa implementazione ho scelto `tanh`, una funzione che porta i valori trasformati dentro `[-1, 1]` e comprime gradualmente quelli molto grandi in valore assoluto.
+## Errori e limiti
 
-Questa scelta è quindi una decisione implementativa provvisoria, non un requisito esplicito del progetto. È isolata alla fine della funzione, quindi si potrà sostituire con un’altra formula qualora il team concordi una convenzione diversa.
+La funzione rifiuta DataFrame vuoti, colonne richieste mancanti, valori non
+convertibili a `float64`, NaN, infiniti e valori non positivi. Non aggiunge
+offset o pseudocount. Rifiuta scaler non adattati, con numero di feature
+diverso da sette o, quando lo scaler conserva i nomi, con nomi/ordine diversi.
+Lo scaler fornito deve inoltre avere `quantile_range=(25.0, 75.0)`,
+`with_centering=True`, `with_scaling=True` e `unit_variance=False`; configurazioni
+diverse vengono rifiutate. Un risultato numerico non finito dopo il fit o
+transform produce un errore.
 
-## 8. Controlli sugli input e messaggi d’errore
+La proposta e il repository non includono ancora il contratto completo L-02
+né lo schema effettivo D-02 in questo checkout: nomi delle colonne e
+compatibilità contrattuale richiedono conferma all’integrazione. Non è presente
+un manifest delle dipendenze. Il Python di sistema non include scikit-learn e
+pytest; per verificare i test sono stati installati temporaneamente sotto
+`/tmp`, senza modificare le dipendenze del progetto.
 
-La funzione interrompe l’elaborazione con un messaggio chiaro se mancano colonne, se il DataFrame è vuoto, se ci sono valori non finiti o non positivi, oppure se lo scaler passato non è uno `RobustScaler` già adattato. Questi controlli aiutano a individuare problemi nello schema o nei dati vicino al punto in cui si presentano, invece di lasciare che producano risultati numerici non validi più avanti nella pipeline.
+La compressione `tanh` adattiva è solo un’alternativa sperimentale non
+implementata; potrà essere valutata separatamente con un’ablation, senza essere
+considerata una funzionalità disponibile.
 
-## 9. File creati
+## Test
 
-- `features/transforms.py` contiene la costante delle colonne e la funzione `make_features`.
-- `features/__init__.py` rende la funzione e la costante importabili dal pacchetto `features`.
-- `tests/test_transforms.py` contiene test per forma, tipo e intervallo dell’output, riuso dello scaler, dati sintetici e input non validi.
-- `README.md` descrive il contratto e mostra come riutilizzare lo scaler tra le partizioni.
-- Questo documento spiega in italiano le scelte e il funzionamento del codice.
-
-## 10. Stato e punti da confermare
-
-L’implementazione segue la firma e le caratteristiche dell’output indicate da L02 e i criteri riportati nella task D03. Non dipende dal codice D02: usa dati sintetici per i test e nomi provvisori per le colonne.
-
-Restano da verificare quando saranno disponibili i contratti completi e D02: i nomi reali delle colonne, l’eventuale gestione di valori non positivi e la scelta condivisa della funzione di compressione in `[-1, 1]`. I test sono stati eseguiti nell’ambiente virtuale D03: tutti e 7 passano.
+`tests/test_transforms.py` copre shape, dtype, intervallo, ordine, formula di
+log e scaling, clipping, riuso dello scaler e anti-leakage, costanza/IQR nullo,
+input vuoto, valori non validi, colonne mancanti/addizionali e scaler
+incompatibile o non adattato. Esecuzione completa: `python3 -m pytest -q`, 19
+test superati. Non esiste un test suite contrattuale L-02 nel checkout e
+`docs/contracts.md` non è presente, pertanto la compatibilità L-02 non è stata
+verificata. I casi dello scaler coprono separatamente quantili, centratura,
+scaling e `unit_variance`.

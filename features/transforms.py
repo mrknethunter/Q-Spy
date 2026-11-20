@@ -1,10 +1,4 @@
-"""Leakage-safe transforms for the seven Omicron input features.
-
-The feature names below are deliberately kept in one editable constant because
-the final column names depend on the D-02 curated-data implementation. The
-processing order follows the project proposal: log transform, robust scaling
-and a bounded mapping suitable for the quantum feature map.
-"""
+"""Leakage-safe transforms for the seven Omicron input features."""
 
 from __future__ import annotations
 
@@ -12,8 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import RobustScaler
 
-# These canonical snake_case names describe the seven Omicron quantities in
-# the proposal. If D-02 uses different names, update this tuple in one place.
+# Proposal section 4.2 order; metadata columns are intentionally excluded.
 FEATURE_COLUMNS: tuple[str, ...] = (
     "snr",
     "peak_frequency",
@@ -29,77 +22,77 @@ def make_features(
     df: pd.DataFrame,
     scaler: RobustScaler | None = None,
 ) -> tuple[np.ndarray, RobustScaler]:
-    """Log-transform and scale the seven Omicron features without data leakage.
+    """Apply log10, robust scaling and clipping to the seven Omicron features.
 
-    Parameters
-    ----------
-    df:
-        DataFrame containing one row per trigger and the columns listed in
-        :data:`FEATURE_COLUMNS`. When ``scaler`` is ``None``, this DataFrame
-        is used to fit the scaler and therefore must contain training rows
-        only. For validation or test data, pass the scaler fitted on training
-        rows.
-    scaler:
-        A previously fitted :class:`~sklearn.preprocessing.RobustScaler`.
-        If omitted, a new scaler is fitted on the log-transformed values in
-        ``df``. Reusing the returned scaler prevents validation/test data from
-        affecting the training statistics.
-
-    Returns
-    -------
-    X_tilde, scaler:
-        ``X_tilde`` is a ``float64`` NumPy array with shape ``(N, 7)`` and
-        values in ``[-1, 1]``. The second value is the fitted or reused scaler.
-
-    Raises
-    ------
-    TypeError
-        If ``df`` is not a pandas DataFrame or ``scaler`` is not a fitted
-        ``RobustScaler``.
-    ValueError
-        If required feature columns are missing, the frame has no rows, or
-        feature values are non-finite or non-positive (``log10`` is undefined
-        for those values).
+    If ``scaler`` is ``None``, statistics are fitted on ``df``; callers must
+    therefore pass training rows only. A fitted scaler can be reused on
+    validation and test frames without updating its statistics.
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError("df must be a pandas DataFrame")
 
-    # Reject missing columns explicitly so a renamed upstream schema produces
-    # an actionable error instead of silently selecting the wrong variables.
     missing = [column for column in FEATURE_COLUMNS if column not in df.columns]
     if missing:
         raise ValueError(f"df is missing required feature columns: {missing}")
-
+    duplicated = [column for column in FEATURE_COLUMNS if list(df.columns).count(column) > 1]
+    if duplicated:
+        raise ValueError(f"df has duplicate required feature columns: {duplicated}")
     if df.empty:
         raise ValueError("df must contain at least one row")
 
-    # Select only model inputs; metadata such as id, label, detector and GPS
-    # must never enter the feature matrix.
-    raw_features = df.loc[:, list(FEATURE_COLUMNS)].to_numpy(dtype=np.float64)
+    try:
+        raw_features = df.loc[:, list(FEATURE_COLUMNS)].to_numpy(dtype=np.float64)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("feature values must be numeric and convertible to float64") from exc
 
-    # All seven quantities are positive physical measurements in this task.
-    # Validate before taking log10 to avoid propagating inf/nan into training.
     if not np.isfinite(raw_features).all():
         raise ValueError("feature values must all be finite")
     if (raw_features <= 0).any():
-        raise ValueError("feature values must be positive for the log10 transform")
+        raise ValueError("feature values must be strictly positive for log10")
 
-    logged_features = np.log10(raw_features)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        logged_features = np.log10(raw_features)
+    if not np.isfinite(logged_features).all():
+        raise ValueError("log10 produced non-finite feature values")
+    logged_frame = pd.DataFrame(logged_features, columns=FEATURE_COLUMNS, index=df.index)
 
-    # Fitting on df occurs only when no scaler is supplied. The caller must
-    # pass training rows for this branch; inference rows reuse train statistics.
     if scaler is None:
         scaler = RobustScaler(quantile_range=(25.0, 75.0))
-        scaled_features = scaler.fit_transform(logged_features)
+        scaled_features = scaler.fit_transform(logged_frame)
     else:
         if not isinstance(scaler, RobustScaler):
             raise TypeError("scaler must be a fitted sklearn RobustScaler")
+        expected_config = {
+            "quantile_range": (25.0, 75.0),
+            "with_centering": True,
+            "with_scaling": True,
+            "unit_variance": False,
+        }
+        incompatible_config = {
+            name: getattr(scaler, name, None)
+            for name, expected in expected_config.items()
+            if getattr(scaler, name, None) != expected
+        }
+        if incompatible_config:
+            raise ValueError(
+                "scaler has incompatible configuration; expected "
+                "quantile_range=(25.0, 75.0), with_centering=True, "
+                "with_scaling=True, unit_variance=False"
+            )
         if not hasattr(scaler, "center_") or not hasattr(scaler, "scale_"):
-            raise TypeError("scaler must be fitted before it is passed to make_features")
-        scaled_features = scaler.transform(logged_features)
+            raise ValueError("scaler must be fitted before it is passed to make_features")
+        if getattr(scaler, "n_features_in_", None) != len(FEATURE_COLUMNS):
+            raise ValueError("scaler is incompatible: it must be fitted on exactly seven features")
+        scaler_columns = getattr(scaler, "feature_names_in_", None)
+        if scaler_columns is not None and tuple(scaler_columns) != FEATURE_COLUMNS:
+            raise ValueError("scaler is incompatible with the required feature names and order")
+        scaled_features = scaler.transform(logged_frame)
 
-    # Robust scaling is unbounded. tanh is the chosen smooth squashing function:
-    # it bounds every finite value and limits the influence of extreme outliers.
-    X_tilde = np.tanh(scaled_features).astype(np.float64, copy=False)
+    scaled_features = np.asarray(scaled_features, dtype=np.float64)
+    if not np.isfinite(scaled_features).all():
+        raise ValueError("robust scaling produced non-finite feature values")
 
+    # RobustScaler uses scale_=1 for a zero-IQR feature, leaving its centered
+    # values finite and well-defined. Clip is the specified bounded mapping.
+    X_tilde = np.clip(scaled_features, -1.0, 1.0).astype(np.float64, copy=False)
     return X_tilde, scaler

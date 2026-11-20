@@ -1,17 +1,15 @@
-"""Acceptance-focused tests for the D-03 feature transformation."""
+"""Acceptance tests for the D-03 feature transformation."""
 
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.preprocessing import RobustScaler
 
 from features.transforms import FEATURE_COLUMNS, make_features
 
 
 def make_frame(rows: int, *, offset: float = 0.0) -> pd.DataFrame:
-    """Build deterministic, positive synthetic Omicron-like measurements."""
     values = np.arange(1, rows + 1, dtype=np.float64)[:, None] + offset
-    # Different scales per column ensure that the transform handles all seven
-    # independently rather than relying on one shared numeric range.
     multipliers = np.arange(1, len(FEATURE_COLUMNS) + 1, dtype=np.float64)[None, :]
     frame = pd.DataFrame(values * multipliers, columns=FEATURE_COLUMNS)
     frame["id"] = [f"trigger-{index}" for index in range(rows)]
@@ -19,59 +17,123 @@ def make_frame(rows: int, *, offset: float = 0.0) -> pd.DataFrame:
     return frame
 
 
-def test_output_has_contract_shape_dtype_and_bounds() -> None:
-    """The output matches L-02's (N, 7), float64, [-1, 1] contract."""
-    transformed, _ = make_features(make_frame(12))
+def test_output_shape_dtype_bounds_and_row_order() -> None:
+    frame = make_frame(12)
+    transformed, _ = make_features(frame)
 
     assert transformed.shape == (12, 7)
     assert transformed.dtype == np.float64
     assert np.isfinite(transformed).all()
-    assert (transformed >= -1.0).all()
-    assert (transformed <= 1.0).all()
+    assert np.all((-1.0 <= transformed) & (transformed <= 1.0))
+    # Row order is retained; the matrix follows FEATURE_COLUMNS, not metadata.
+    assert transformed[0, 0] < transformed[-1, 0]
 
 
-def test_scaler_is_fitted_on_training_rows_and_reused_for_holdout() -> None:
-    """Extreme holdout rows do not change the train-fitted scaler statistics."""
+def test_log_robust_scaling_and_clipping_formula() -> None:
+    frame = make_frame(5)
+    output, scaler = make_features(frame)
+    logged = np.log10(frame.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64))
+    expected_scaled = (logged - scaler.center_) / scaler.scale_
+
+    np.testing.assert_allclose(output, np.clip(expected_scaled, -1.0, 1.0))
+    assert np.any(np.abs(expected_scaled) > 1.0)
+
+
+def test_training_statistics_are_independent_of_validation_and_transform() -> None:
     training = make_frame(8)
-    holdout = make_frame(3, offset=10_000.0)
+    _, scaler = make_features(training)
+    train_center, train_scale = scaler.center_.copy(), scaler.scale_.copy()
 
-    _, train_scaler = make_features(training)
-    train_center = train_scaler.center_.copy()
-    train_scale = train_scaler.scale_.copy()
+    validation_a = make_frame(2, offset=10_000.0)
+    validation_b = make_frame(2, offset=1_000_000.0)
+    make_features(validation_a, scaler=scaler)
+    make_features(validation_b, scaler=scaler)
 
-    # Transforming holdout rows with the returned scaler must not refit it.
-    heldout_features, reused_scaler = make_features(holdout, scaler=train_scaler)
+    np.testing.assert_array_equal(scaler.center_, train_center)
+    np.testing.assert_array_equal(scaler.scale_, train_scale)
+    _, repeated_scaler = make_features(training.copy())
+    np.testing.assert_array_equal(repeated_scaler.center_, train_center)
+    np.testing.assert_array_equal(repeated_scaler.scale_, train_scale)
 
-    np.testing.assert_array_equal(reused_scaler.center_, train_center)
-    np.testing.assert_array_equal(reused_scaler.scale_, train_scale)
-    assert heldout_features.shape == (3, 7)
-
-    # Independently fitting only the training frame gives the same statistics;
-    # the very different holdout distribution has played no role in the fit.
-    _, second_train_scaler = make_features(training.copy())
-    np.testing.assert_allclose(train_scaler.center_, second_train_scaler.center_)
-    np.testing.assert_allclose(train_scaler.scale_, second_train_scaler.scale_)
-
-    # Fitting on the combined partitions would produce different statistics;
-    # this guards against accidentally including holdout rows in the fit input.
-    _, combined_scaler = make_features(pd.concat([training, holdout], ignore_index=True))
-    assert not np.allclose(train_scaler.center_, combined_scaler.center_)
-    assert not np.allclose(train_scaler.scale_, combined_scaler.scale_)
+    _, contaminated_scaler = make_features(pd.concat([training, validation_a], ignore_index=True))
+    assert not np.allclose(contaminated_scaler.center_, train_center)
 
 
-@pytest.mark.parametrize("bad_value", [0.0, -1.0, np.nan, np.inf])
-def test_rejects_values_that_cannot_be_log_transformed(bad_value: float) -> None:
-    """Invalid measurements fail early with a useful error."""
+def test_constant_and_zero_iqr_features_remain_finite() -> None:
+    frame = make_frame(4)
+    frame[FEATURE_COLUMNS[0]] = 5.0
+    output, scaler = make_features(frame)
+
+    assert scaler.scale_[0] == 1.0
+    np.testing.assert_array_equal(output[:, 0], np.zeros(4, dtype=np.float64))
+    assert np.isfinite(output).all()
+
+
+@pytest.mark.parametrize("bad_value", [0.0, -1.0, np.nan, np.inf, -np.inf])
+def test_rejects_values_invalid_for_logarithm(bad_value: float) -> None:
     frame = make_frame(2)
     frame.loc[0, FEATURE_COLUMNS[0]] = bad_value
-
     with pytest.raises(ValueError):
         make_features(frame)
 
 
-def test_rejects_missing_feature_columns() -> None:
-    """Schema mismatches from upstream curation are reported explicitly."""
-    frame = make_frame(2).drop(columns=[FEATURE_COLUMNS[0]])
-
-    with pytest.raises(ValueError, match="missing required feature columns"):
+def test_rejects_non_numeric_features() -> None:
+    frame = make_frame(2)
+    frame[FEATURE_COLUMNS[0]] = frame[FEATURE_COLUMNS[0]].astype(object)
+    frame.loc[0, FEATURE_COLUMNS[0]] = "not numeric"
+    with pytest.raises(ValueError, match="numeric"):
         make_features(frame)
+
+
+def test_rejects_missing_feature_columns_but_allows_additional_columns() -> None:
+    frame = make_frame(2)
+    make_features(frame)  # id and label are intentionally ignored.
+    with pytest.raises(ValueError, match="missing required feature columns"):
+        make_features(frame.drop(columns=[FEATURE_COLUMNS[0]]))
+
+
+def test_rejects_empty_frame() -> None:
+    with pytest.raises(ValueError, match="at least one row"):
+        make_features(make_frame(0))
+
+
+def test_rejects_duplicate_required_columns() -> None:
+    frame = make_frame(2)
+    duplicated = pd.concat([frame, frame[[FEATURE_COLUMNS[0]]]], axis=1)
+    with pytest.raises(ValueError, match="duplicate required feature columns"):
+        make_features(duplicated)
+
+
+def test_rejects_incompatible_or_unfitted_scaler() -> None:
+    frame = make_frame(3)
+    incompatible = RobustScaler().fit(pd.DataFrame(np.ones((3, 7)), columns=reversed(FEATURE_COLUMNS)))
+    with pytest.raises(ValueError, match="incompatible"):
+        make_features(frame, scaler=incompatible)
+
+    with pytest.raises(ValueError, match="fitted"):
+        make_features(frame, scaler=RobustScaler())
+
+
+def test_rejects_scaler_with_wrong_feature_count() -> None:
+    frame = make_frame(3)
+    incompatible = RobustScaler().fit(np.ones((3, 6)))
+    with pytest.raises(ValueError, match="exactly seven"):
+        make_features(frame, scaler=incompatible)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"quantile_range": (10.0, 90.0)},
+        {"with_centering": False},
+        {"with_scaling": False},
+        {"unit_variance": True},
+    ],
+    ids=["quantile-range", "centering", "scaling", "unit-variance"],
+)
+def test_rejects_scalers_with_incompatible_configuration(config: dict[str, object]) -> None:
+    frame = make_frame(3)
+    scaler = RobustScaler(**config).fit(frame.loc[:, FEATURE_COLUMNS])
+
+    with pytest.raises(ValueError, match="incompatible configuration"):
+        make_features(frame, scaler=scaler)
