@@ -17,9 +17,9 @@ Questi moduli **analizzano** matrici kernel già calcolate: non costruiscono il 
 
 Una matrice kernel contiene la similarità tra ogni coppia di osservazioni:
 
-\[
+$$
 K_{ij}=k(x_i,x_j)
-\]
+$$
 
 La diagonale contiene le similarità di ogni osservazione con sé stessa. Per questo, per studiare quanto le osservazioni diverse si assomigliano, si considerano gli elementi fuori diagonale.
 
@@ -47,11 +47,11 @@ Gli autovalori descrivono come l'informazione del kernel è distribuita nelle su
 
 L'effective rank riassume quanto lo spettro è distribuito. Si basa sull'entropia degli autovalori normalizzati:
 
-\[
+$$
 p_i=\frac{\lambda_i}{\sum_j \lambda_j},
 \qquad
 r_{\mathrm{eff}}=\exp\left(-\sum_i p_i\log p_i\right)
-\]
+$$
 
 Un valore vicino a 1 indica che poche direzioni dominano; un valore più alto indica una distribuzione più uniforme degli autovalori.
 
@@ -63,21 +63,21 @@ L'alignment misura quanto le similarità rappresentate dal kernel sono coerenti 
 
 Il codice costruisce una matrice target `T`:
 
-\[
+$$
 T_{ij} =
 \begin{cases}
 1 & \text{se } y_i=y_j\\
 0 & \text{se } y_i\ne y_j
 \end{cases}
-\]
+$$
 
 Poi centra `K` e `T` e calcola la centered kernel-target alignment:
 
-\[
+$$
 \operatorname{CKTA}(K,T)=
 \frac{\langle K_c,T_c\rangle_F}
 {\|K_c\|_F\,\|T_c\|_F}
-\]
+$$
 
 Valori più alti indicano una maggiore coerenza tra il kernel e le classi. La funzione è pensata per classificazione, anche multiclass; non per target continui di regressione.
 
@@ -85,17 +85,17 @@ Valori più alti indicano una maggiore coerenza tra il kernel e le classi. La fu
 
 ### `diagnostics/concentration.py`
 
-| Funzione | Input | Output | Descrizione |
-|---|---|---|---|
-| `off_diagonal_values(K)` | Matrice `N × N` | Array 1D | Estrae i valori fuori diagonale senza duplicati |
-| `off_diagonal_variance(K)` | Matrice `N × N` | `float` | Calcola la varianza dei valori fuori diagonale |
-| `eigen_spectrum(K)` | Matrice `N × N` | Array 1D | Restituisce gli autovalori in ordine decrescente |
-| `effective_rank(K, tol=1e-10)` | Matrice `N × N` | `float` | Calcola l'effective rank spettrale |
+| Funzione                       | Input           | Output   | Descrizione                                      |
+| ------------------------------ | --------------- | -------- | ------------------------------------------------ |
+| `off_diagonal_values(K)`       | Matrice `N × N` | Array 1D | Estrae i valori fuori diagonale senza duplicati  |
+| `off_diagonal_variance(K)`     | Matrice `N × N` | `float`  | Calcola la varianza dei valori fuori diagonale   |
+| `eigen_spectrum(K)`            | Matrice `N × N` | Array 1D | Restituisce gli autovalori in ordine decrescente |
+| `effective_rank(K, tol=1e-10)` | Matrice `N × N` | `float`  | Calcola l'effective rank spettrale               |
 
 ### `diagnostics/alignment.py`
 
-| Funzione | Input | Output | Descrizione |
-|---|---|---|---|
+| Funzione                        | Input                                      | Output  | Descrizione                                 |
+| ------------------------------- | ------------------------------------------ | ------- | ------------------------------------------- |
 | `kernel_target_alignment(K, y)` | Matrice `N × N` e vettore di `N` etichette | `float` | Calcola la centered kernel-target alignment |
 
 ### Esempio
