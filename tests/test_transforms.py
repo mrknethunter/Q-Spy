@@ -17,6 +17,12 @@ def make_frame(rows: int, *, offset: float = 0.0) -> pd.DataFrame:
     return frame
 
 
+def make_log_frame(log_values: list[float]) -> pd.DataFrame:
+    raw = np.power(10.0, np.asarray(log_values, dtype=np.float64))[:, None]
+    values = np.repeat(raw, len(FEATURE_COLUMNS), axis=1)
+    return pd.DataFrame(values, columns=FEATURE_COLUMNS)
+
+
 def test_output_shape_dtype_bounds_and_row_order() -> None:
     frame = make_frame(12)
     transformed, _ = make_features(frame)
@@ -29,6 +35,18 @@ def test_output_shape_dtype_bounds_and_row_order() -> None:
     assert transformed[0, 0] < transformed[-1, 0]
 
 
+def test_preserves_feature_and_observation_order() -> None:
+    frame = make_frame(8)
+    expected, scaler = make_features(frame)
+    row_order = [5, 1, 7, 0, 3, 2, 6, 4]
+    reordered = frame.iloc[row_order].loc[
+        :, [*reversed(FEATURE_COLUMNS), "id", "label"]
+    ]
+
+    actual, _ = make_features(reordered, scaler=scaler)
+    np.testing.assert_array_equal(actual, expected[row_order])
+
+
 def test_log_robust_scaling_and_clipping_formula() -> None:
     frame = make_frame(5)
     output, scaler = make_features(frame)
@@ -37,6 +55,35 @@ def test_log_robust_scaling_and_clipping_formula() -> None:
 
     np.testing.assert_allclose(output, np.clip(expected_scaled, -1.0, 1.0))
     assert np.any(np.abs(expected_scaled) > 1.0)
+
+
+def _scaler_with_known_unit_iqr() -> RobustScaler:
+    _, scaler = make_features(make_log_frame([-2, -1, 0, 1, 2]))
+    np.testing.assert_allclose(scaler.center_, np.zeros(7), atol=1e-15)
+    np.testing.assert_allclose(scaler.scale_, np.full(7, 2.0), atol=1e-15)
+    return scaler
+
+
+def test_clipping_saturates_below_lower_bound() -> None:
+    output, _ = make_features(make_log_frame([-6]), scaler=_scaler_with_known_unit_iqr())
+    np.testing.assert_array_equal(output, np.full((1, 7), -1.0))
+
+
+def test_clipping_saturates_above_upper_bound() -> None:
+    output, _ = make_features(make_log_frame([6]), scaler=_scaler_with_known_unit_iqr())
+    np.testing.assert_array_equal(output, np.full((1, 7), 1.0))
+
+
+def test_clipping_preserves_values_inside_interval() -> None:
+    output, _ = make_features(make_log_frame([-0.5, 0, 0.5]), scaler=_scaler_with_known_unit_iqr())
+    expected = np.repeat(np.array([[-0.25], [0.0], [0.25]]), len(FEATURE_COLUMNS), axis=1)
+    np.testing.assert_allclose(output, expected, rtol=0, atol=1e-15)
+
+
+def test_clipping_preserves_values_exactly_on_limits() -> None:
+    output, _ = make_features(make_log_frame([-2, 2]), scaler=_scaler_with_known_unit_iqr())
+    np.testing.assert_allclose(output[0], np.full(7, -1.0), rtol=0, atol=1e-15)
+    np.testing.assert_allclose(output[1], np.full(7, 1.0), rtol=0, atol=1e-15)
 
 
 def test_training_statistics_are_independent_of_validation_and_transform() -> None:
