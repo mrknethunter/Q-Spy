@@ -1,0 +1,642 @@
+{
+  "l05_freeze": null,
+  "overlap_policy": {
+    "concentration": "three pairwise-disjoint subsets of main; 30 main IDs unused by concentration",
+    "drift_references": "subset of main, intentionally reused for repeated drift measurements; may overlap concentration",
+    "main_control": "disjoint",
+    "source": "all IDs from frozen P2 seed-0 test and O3b; no training or validation ID from any committed D-04 split"
+  },
+  "schema": "q-spy-hardware-subsets-v1",
+  "selection_seed": 2026,
+  "selection_sha256": "7fee3e50508c951f1161db9e3cd593ea66e609e572d3e38dc7bdbbbc58a0c7c7",
+  "source": {
+    "candidate_rows": 62581,
+    "dataset_sha256": "c8bb3d84efa5b583ee41d671ae195b73bb5cdf901e3af03e351e1e3eac0260f1",
+    "exclude_all_d04_train_validation": true,
+    "filter_run": "O3b",
+    "held_out": "Fast_Scattering",
+    "k": null,
+    "partition": "test",
+    "protocol": "P2",
+    "seed": 0,
+    "split_manifest_path": "data/splits/v1/manifest.json",
+    "split_manifest_sha256": "d057008a7a8accefad2b12ef7ee5417c5447979d889ba1d28f2e102e6866163e"
+  },
+  "status": "draft_pending_l05",
+  "subsets": {
+    "concentration": [
+      {
+        "counts_by_class": {
+          "Blip": 4,
+          "Extremely_Loud": 4,
+          "Fast_Scattering": 4,
+          "Koi_Fish": 4,
+          "Low_Frequency_Burst": 4,
+          "Low_Frequency_Lines": 4,
+          "Scattered_Light": 3,
+          "Tomte": 3
+        },
+        "counts_by_class_detector": {
+          "Blip": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Extremely_Loud": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Fast_Scattering": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Koi_Fish": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Low_Frequency_Burst": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Low_Frequency_Lines": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Scattered_Light": {
+            "H1": 2,
+            "L1": 1
+          },
+          "Tomte": {
+            "H1": 1,
+            "L1": 2
+          }
+        },
+        "counts_by_detector": {
+          "H1": 15,
+          "L1": 15
+        },
+        "counts_by_run": {
+          "O1": 0,
+          "O2": 0,
+          "O3a": 0,
+          "O3b": 30
+        },
+        "ids": [
+          "H1:0HBUW3SkZq",
+          "H1:59sG2cBz0q",
+          "H1:5ws3ikP8qg",
+          "H1:9694E4uFmK",
+          "H1:F5ALjk0ESu",
+          "H1:JilrXCilCa",
+          "H1:LAKotJgYGs",
+          "H1:RKnfRfI80e",
+          "H1:W9Dgq8Fhau",
+          "H1:go3faBUrel",
+          "H1:ipnw4K5e8z",
+          "H1:kGbb5uCcgY",
+          "H1:u8EcqxOdt4",
+          "H1:xpVJv0Scc9",
+          "H1:xvN0TeZ8ey",
+          "L1:1Ozmql1zLl",
+          "L1:N5BLPEdrT6",
+          "L1:NBToeouQ5M",
+          "L1:Qc8G8Um4l1",
+          "L1:QpMnFFVKzW",
+          "L1:TFCM3EwCJh",
+          "L1:UTHVij0PfB",
+          "L1:WS9HnIAahh",
+          "L1:We7BrHUa8Y",
+          "L1:Zj6UlwmhIO",
+          "L1:jzy5pU2ANX",
+          "L1:lHmnZ34qFK",
+          "L1:okEArGafgX",
+          "L1:tac8Ta97EF",
+          "L1:tbvGAoEWA9"
+        ],
+        "name": "concentration_1",
+        "size": 30
+      },
+      {
+        "counts_by_class": {
+          "Blip": 4,
+          "Extremely_Loud": 4,
+          "Fast_Scattering": 4,
+          "Koi_Fish": 4,
+          "Low_Frequency_Burst": 3,
+          "Low_Frequency_Lines": 3,
+          "Scattered_Light": 4,
+          "Tomte": 4
+        },
+        "counts_by_class_detector": {
+          "Blip": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Extremely_Loud": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Fast_Scattering": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Koi_Fish": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Low_Frequency_Burst": {
+            "H1": 1,
+            "L1": 2
+          },
+          "Low_Frequency_Lines": {
+            "H1": 2,
+            "L1": 1
+          },
+          "Scattered_Light": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Tomte": {
+            "H1": 2,
+            "L1": 2
+          }
+        },
+        "counts_by_detector": {
+          "H1": 15,
+          "L1": 15
+        },
+        "counts_by_run": {
+          "O1": 0,
+          "O2": 0,
+          "O3a": 0,
+          "O3b": 30
+        },
+        "ids": [
+          "H1:1QD6o1WL3q",
+          "H1:2fPcaQztos",
+          "H1:2qz7rinKTi",
+          "H1:4IrDEAYcUn",
+          "H1:9AZxiPj1ER",
+          "H1:FWS4Yz2CtX",
+          "H1:IK6gveWRk4",
+          "H1:MXautubWT3",
+          "H1:NZwPrA5nBR",
+          "H1:OD6eKEvlDR",
+          "H1:cfbEHB5m5E",
+          "H1:crSw8shtMg",
+          "H1:gaMJWuNs7t",
+          "H1:wXMMDiemCI",
+          "H1:wkwGX4Bd0K",
+          "L1:1C3hm609Bk",
+          "L1:1TyG9ezsBd",
+          "L1:6oKrm3C4cj",
+          "L1:7dCUn9FWbr",
+          "L1:9zzqtIxMAs",
+          "L1:Kbdj0zbPhK",
+          "L1:M8TujtWsLI",
+          "L1:OrGpxdHIO9",
+          "L1:PVHJcbSmAI",
+          "L1:RPjmD5WYxI",
+          "L1:RuICwvhPa5",
+          "L1:gYVQEQJIxM",
+          "L1:kCMq5Eq1nm",
+          "L1:mllJypTgbg",
+          "L1:spgTOAJoZ1"
+        ],
+        "name": "concentration_2",
+        "size": 30
+      },
+      {
+        "counts_by_class": {
+          "Blip": 4,
+          "Extremely_Loud": 4,
+          "Fast_Scattering": 3,
+          "Koi_Fish": 3,
+          "Low_Frequency_Burst": 4,
+          "Low_Frequency_Lines": 4,
+          "Scattered_Light": 4,
+          "Tomte": 4
+        },
+        "counts_by_class_detector": {
+          "Blip": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Extremely_Loud": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Fast_Scattering": {
+            "H1": 2,
+            "L1": 1
+          },
+          "Koi_Fish": {
+            "H1": 1,
+            "L1": 2
+          },
+          "Low_Frequency_Burst": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Low_Frequency_Lines": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Scattered_Light": {
+            "H1": 2,
+            "L1": 2
+          },
+          "Tomte": {
+            "H1": 2,
+            "L1": 2
+          }
+        },
+        "counts_by_detector": {
+          "H1": 15,
+          "L1": 15
+        },
+        "counts_by_run": {
+          "O1": 0,
+          "O2": 0,
+          "O3a": 0,
+          "O3b": 30
+        },
+        "ids": [
+          "H1:31Rs65rssu",
+          "H1:6Cake4dPJN",
+          "H1:8q7CtUgfNF",
+          "H1:8rQdKLMbrO",
+          "H1:ALDFz3yfv0",
+          "H1:AtubLHGVbW",
+          "H1:DLCysVd2Yj",
+          "H1:IEoZwo1Egt",
+          "H1:RIA9QulluJ",
+          "H1:RwIPj2jfOI",
+          "H1:TnthPgwJBS",
+          "H1:hQkpNzx46h",
+          "H1:jrZ4WJ8EXv",
+          "H1:k9dAIfKGCv",
+          "H1:vwvYcp2KQS",
+          "L1:9cYCDeqQhM",
+          "L1:A6LXvm8Y1b",
+          "L1:B5IgrHnVxi",
+          "L1:JOqjUz8LoG",
+          "L1:JVhWwHHk9d",
+          "L1:LtcZ0VTRof",
+          "L1:Or9z5NQx1y",
+          "L1:YlTWQHPnmv",
+          "L1:YzUbZYO7Dj",
+          "L1:cq0tkO2j25",
+          "L1:oJxEni1tN0",
+          "L1:pesqHlceGu",
+          "L1:sWdCqKE36h",
+          "L1:tkSfhUwP0D",
+          "L1:vT8md4r3Gv"
+        ],
+        "name": "concentration_3",
+        "size": 30
+      }
+    ],
+    "control": {
+      "counts_by_class": {
+        "Blip": 5,
+        "Extremely_Loud": 5,
+        "Fast_Scattering": 5,
+        "Koi_Fish": 5,
+        "Low_Frequency_Burst": 5,
+        "Low_Frequency_Lines": 5,
+        "Scattered_Light": 5,
+        "Tomte": 5
+      },
+      "counts_by_class_detector": {
+        "Blip": {
+          "H1": 2,
+          "L1": 3
+        },
+        "Extremely_Loud": {
+          "H1": 2,
+          "L1": 3
+        },
+        "Fast_Scattering": {
+          "H1": 2,
+          "L1": 3
+        },
+        "Koi_Fish": {
+          "H1": 2,
+          "L1": 3
+        },
+        "Low_Frequency_Burst": {
+          "H1": 3,
+          "L1": 2
+        },
+        "Low_Frequency_Lines": {
+          "H1": 3,
+          "L1": 2
+        },
+        "Scattered_Light": {
+          "H1": 3,
+          "L1": 2
+        },
+        "Tomte": {
+          "H1": 3,
+          "L1": 2
+        }
+      },
+      "counts_by_detector": {
+        "H1": 20,
+        "L1": 20
+      },
+      "counts_by_run": {
+        "O1": 0,
+        "O2": 0,
+        "O3a": 0,
+        "O3b": 40
+      },
+      "ids": [
+        "H1:0k7ris6k4p",
+        "H1:6O5M0hSVYL",
+        "H1:8mIcjz0B1l",
+        "H1:AE3KwxOnL2",
+        "H1:BlQjmQQisL",
+        "H1:Cmv5uRIYiI",
+        "H1:DpMKRCLT7g",
+        "H1:DvciQxhzeJ",
+        "H1:Fugc5cKpi8",
+        "H1:JeJYZauzEA",
+        "H1:RyD2kUTwzh",
+        "H1:WXeJ4VF89c",
+        "H1:Zouubb2fzh",
+        "H1:cXrlp1nhED",
+        "H1:em4JgmbLYC",
+        "H1:fgzOHJoS9w",
+        "H1:hJgZ6u54TE",
+        "H1:kvdFhrxVbN",
+        "H1:uPAHddVynz",
+        "H1:zHZHmHr5vT",
+        "L1:1PKIfkDTDD",
+        "L1:1qlReclQV8",
+        "L1:62IhgPKuhl",
+        "L1:6dPcA0CoE0",
+        "L1:6yKrFYK7J3",
+        "L1:AOBdEJfJg2",
+        "L1:D3WQXR4Gae",
+        "L1:Doqt1sggtr",
+        "L1:EfmeZrPdl4",
+        "L1:LmbXpFF5Dp",
+        "L1:NUgvhMYsBi",
+        "L1:OMOmE8FBj6",
+        "L1:SmVgCwtf8y",
+        "L1:di9eb4jRVe",
+        "L1:mULGjd3q9L",
+        "L1:rJRFlYIDhZ",
+        "L1:toAM8xZF00",
+        "L1:xTBWMjqXRq",
+        "L1:y5Z3uVLz5I",
+        "L1:ypmBaNUuwA"
+      ],
+      "size": 40
+    },
+    "drift_references": {
+      "counts_by_class": {
+        "Blip": 0,
+        "Extremely_Loud": 1,
+        "Fast_Scattering": 1,
+        "Koi_Fish": 1,
+        "Low_Frequency_Burst": 0,
+        "Low_Frequency_Lines": 1,
+        "Scattered_Light": 1,
+        "Tomte": 0
+      },
+      "counts_by_class_detector": {
+        "Blip": {
+          "H1": 0,
+          "L1": 0
+        },
+        "Extremely_Loud": {
+          "H1": 1,
+          "L1": 0
+        },
+        "Fast_Scattering": {
+          "H1": 1,
+          "L1": 0
+        },
+        "Koi_Fish": {
+          "H1": 1,
+          "L1": 0
+        },
+        "Low_Frequency_Burst": {
+          "H1": 0,
+          "L1": 0
+        },
+        "Low_Frequency_Lines": {
+          "H1": 0,
+          "L1": 1
+        },
+        "Scattered_Light": {
+          "H1": 0,
+          "L1": 1
+        },
+        "Tomte": {
+          "H1": 0,
+          "L1": 0
+        }
+      },
+      "counts_by_detector": {
+        "H1": 3,
+        "L1": 2
+      },
+      "counts_by_run": {
+        "O1": 0,
+        "O2": 0,
+        "O3a": 0,
+        "O3b": 5
+      },
+      "ids": [
+        "H1:F5ALjk0ESu",
+        "H1:phAGiKnieG",
+        "H1:wkwGX4Bd0K",
+        "L1:LtcZ0VTRof",
+        "L1:PVHJcbSmAI"
+      ],
+      "size": 5
+    },
+    "main": {
+      "counts_by_class": {
+        "Blip": 15,
+        "Extremely_Loud": 15,
+        "Fast_Scattering": 15,
+        "Koi_Fish": 15,
+        "Low_Frequency_Burst": 15,
+        "Low_Frequency_Lines": 15,
+        "Scattered_Light": 15,
+        "Tomte": 15
+      },
+      "counts_by_class_detector": {
+        "Blip": {
+          "H1": 8,
+          "L1": 7
+        },
+        "Extremely_Loud": {
+          "H1": 8,
+          "L1": 7
+        },
+        "Fast_Scattering": {
+          "H1": 8,
+          "L1": 7
+        },
+        "Koi_Fish": {
+          "H1": 8,
+          "L1": 7
+        },
+        "Low_Frequency_Burst": {
+          "H1": 7,
+          "L1": 8
+        },
+        "Low_Frequency_Lines": {
+          "H1": 7,
+          "L1": 8
+        },
+        "Scattered_Light": {
+          "H1": 7,
+          "L1": 8
+        },
+        "Tomte": {
+          "H1": 7,
+          "L1": 8
+        }
+      },
+      "counts_by_detector": {
+        "H1": 60,
+        "L1": 60
+      },
+      "counts_by_run": {
+        "O1": 0,
+        "O2": 0,
+        "O3a": 0,
+        "O3b": 120
+      },
+      "ids": [
+        "H1:0HBUW3SkZq",
+        "H1:13rTFt4JPj",
+        "H1:1QD6o1WL3q",
+        "H1:2fPcaQztos",
+        "H1:2qz7rinKTi",
+        "H1:31Rs65rssu",
+        "H1:38k492lo3g",
+        "H1:4IrDEAYcUn",
+        "H1:59sG2cBz0q",
+        "H1:5ws3ikP8qg",
+        "H1:6Cake4dPJN",
+        "H1:8q7CtUgfNF",
+        "H1:8rQdKLMbrO",
+        "H1:9694E4uFmK",
+        "H1:9AZxiPj1ER",
+        "H1:ALDFz3yfv0",
+        "H1:AtubLHGVbW",
+        "H1:BP2gPDfQU6",
+        "H1:DLCysVd2Yj",
+        "H1:F5ALjk0ESu",
+        "H1:FWS4Yz2CtX",
+        "H1:Gdy9fjlMO2",
+        "H1:IEoZwo1Egt",
+        "H1:IK6gveWRk4",
+        "H1:IrZmZKob9y",
+        "H1:JdvEKhtDAk",
+        "H1:JilrXCilCa",
+        "H1:Kkwl5path6",
+        "H1:LAKotJgYGs",
+        "H1:MXautubWT3",
+        "H1:NZwPrA5nBR",
+        "H1:OD6eKEvlDR",
+        "H1:P2U8Qim8yy",
+        "H1:PrXU4OvblK",
+        "H1:QGGcYnv8zP",
+        "H1:RIA9QulluJ",
+        "H1:RKnfRfI80e",
+        "H1:RwIPj2jfOI",
+        "H1:TnthPgwJBS",
+        "H1:W9Dgq8Fhau",
+        "H1:XfXFuJlGAv",
+        "H1:XwKkES3MSV",
+        "H1:cfbEHB5m5E",
+        "H1:crSw8shtMg",
+        "H1:fUzgYmBF41",
+        "H1:gaMJWuNs7t",
+        "H1:go3faBUrel",
+        "H1:hQkpNzx46h",
+        "H1:ipnw4K5e8z",
+        "H1:jrZ4WJ8EXv",
+        "H1:k9dAIfKGCv",
+        "H1:kGbb5uCcgY",
+        "H1:pM5z38F6ef",
+        "H1:phAGiKnieG",
+        "H1:u8EcqxOdt4",
+        "H1:vwvYcp2KQS",
+        "H1:wXMMDiemCI",
+        "H1:wkwGX4Bd0K",
+        "H1:xpVJv0Scc9",
+        "H1:xvN0TeZ8ey",
+        "L1:06BXhEgvsg",
+        "L1:1C3hm609Bk",
+        "L1:1Ozmql1zLl",
+        "L1:1TyG9ezsBd",
+        "L1:6oKrm3C4cj",
+        "L1:7dCUn9FWbr",
+        "L1:9cYCDeqQhM",
+        "L1:9zzqtIxMAs",
+        "L1:A6LXvm8Y1b",
+        "L1:B5IgrHnVxi",
+        "L1:C7pTcwhNQ1",
+        "L1:CmCg2CK4De",
+        "L1:ERwIWcifMq",
+        "L1:JOqjUz8LoG",
+        "L1:JVhWwHHk9d",
+        "L1:KTJjj6HnrP",
+        "L1:Kbdj0zbPhK",
+        "L1:LtcZ0VTRof",
+        "L1:M8TujtWsLI",
+        "L1:N5BLPEdrT6",
+        "L1:NBToeouQ5M",
+        "L1:Or9z5NQx1y",
+        "L1:OrGpxdHIO9",
+        "L1:PVHJcbSmAI",
+        "L1:Qc8G8Um4l1",
+        "L1:QpMnFFVKzW",
+        "L1:RPjmD5WYxI",
+        "L1:RuICwvhPa5",
+        "L1:TFCM3EwCJh",
+        "L1:TjNCip5T4M",
+        "L1:UTHVij0PfB",
+        "L1:WS9HnIAahh",
+        "L1:We7BrHUa8Y",
+        "L1:YlTWQHPnmv",
+        "L1:YzUbZYO7Dj",
+        "L1:Zj6UlwmhIO",
+        "L1:cq0tkO2j25",
+        "L1:dKdkXnPU4L",
+        "L1:eAqCCsw9zO",
+        "L1:gYVQEQJIxM",
+        "L1:hwHLplAZmz",
+        "L1:jzy5pU2ANX",
+        "L1:kCMq5Eq1nm",
+        "L1:l8Cm95UQVA",
+        "L1:lHmnZ34qFK",
+        "L1:mllJypTgbg",
+        "L1:my698HtioJ",
+        "L1:oJxEni1tN0",
+        "L1:oNtAJQwChp",
+        "L1:okEArGafgX",
+        "L1:pesqHlceGu",
+        "L1:sBobhuU7G4",
+        "L1:sWdCqKE36h",
+        "L1:spgTOAJoZ1",
+        "L1:tac8Ta97EF",
+        "L1:tbvGAoEWA9",
+        "L1:tkSfhUwP0D",
+        "L1:ukA7csyvG1",
+        "L1:vT8md4r3Gv",
+        "L1:yr4BzY4jGu"
+      ],
+      "size": 120
+    }
+  }
+}
