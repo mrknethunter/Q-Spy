@@ -9,6 +9,7 @@ from models.baselines import build_baseline
 FEWSHOT_MODELS = [
     "rbf_svm",
     "laplacian_svm",
+    "knn",
 ]
 
 
@@ -85,11 +86,21 @@ def test_fewshot_fit_predict_and_metrics(model_name: str, fewshot_glitch_fixture
 
     y_pred = model.predict(X_test)
     scores = model.score_samples(X_test)
+    macro_f1 = f1_score(y_test, y_pred, average="macro")
+    bal_acc = balanced_accuracy_score(y_test, y_pred)
+    report = model.get_budget_report()
+
+    print(f"\n--- [{model_name.upper()}] ---")
+    print(f"Budget valutato : {report['n_configs_evaluated']}/{report['budget_limit']}")
+    print(f"Best params     : {report['best_params']}")
+    print(f"CV Macro-F1     : {report['best_cv_score']:.4f}")
+    print(f"Test Macro-F1   : {macro_f1:.4f} | Balanced Acc: {bal_acc:.4f}")
+    print(f"Inferenza (1 per classe): pred={y_pred[::15].tolist()} vs true={y_test[::15].tolist()}")
 
     assert y_pred.shape == (len(y_test),)
     assert scores.shape == (len(y_test), n_classes)
-    assert f1_score(y_test, y_pred, average="macro") > 0.5
-    assert balanced_accuracy_score(y_test, y_pred) > 0.5
+    assert macro_f1 > 0.5
+    assert bal_acc > 0.5
 
 
 @pytest.mark.parametrize("model_name", FEWSHOT_MODELS)
@@ -154,3 +165,23 @@ def test_fewshot_edge_cases(model_name: str) -> None:
     model_const = build_baseline(model_name, budget=4, seed=42, cv_folds=4)
     model_const.fit(X_const, y_const)
     assert model_const.predict(np.ones((6, 7))).shape == (6,)
+
+
+def test_knn_clamps_neighbors_when_fold_size_is_small() -> None:
+    """Verify kNN never exceeds inner CV training fold size when k=5 on few classes."""
+    rng = np.random.default_rng(77)
+    # 2 classes, k=5 -> N=10 -> with cv_folds=5 each inner train fold has 8 samples (< n_neighbors=9)
+    X_train = np.vstack(
+        [
+            rng.normal(loc=0.0, scale=0.5, size=(5, 7)),
+            rng.normal(loc=3.0, scale=0.5, size=(5, 7)),
+        ]
+    )
+    y_train = np.repeat([0, 1], 5)
+    X_test = rng.normal(loc=0.0, scale=0.5, size=(6, 7))
+
+    model = build_baseline("knn", budget=30, seed=42, cv_folds=5)
+    model.fit(X_train, y_train)
+
+    assert model.predict(X_test).shape == (6,)
+    assert model.score_samples(X_test).shape == (6, 2)
