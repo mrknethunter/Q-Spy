@@ -223,3 +223,6 @@ __marimo__/
 qiskit-ibm.json
 .qiskit/
 apikey.json
+
+# Local pilot dry runs (hardware runs, hw-*, are kept)
+results/pilot/dry-*
