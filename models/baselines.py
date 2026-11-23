@@ -9,9 +9,11 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone
 from sklearn.metrics import f1_score
 from sklearn.model_selection import ParameterGrid, StratifiedKFold
-from sklearn.svm import SVC
 from sklearn.base import BaseEstimator, ClassifierMixin
+
+from sklearn.svm import SVC
 from sklearn.metrics.pairwise import laplacian_kernel
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class BaseBudgetedModel(ABC):
@@ -160,6 +162,11 @@ class BaseFewShotBaseline(BaseBudgetedModel, ABC):
         raise NotImplementedError(f"{self.model_name} does not expose continuous scores.")
 
 
+#-----------------------------------------------------------------------------------------------
+# Few-Shot models
+#-----------------------------------------------------------------------------------------------
+
+
 class RBFSVMBaseline(BaseFewShotBaseline):
     """Support Vector Classifier with RBF kernel and One-vs-Rest strategy."""
 
@@ -250,9 +257,65 @@ class LaplacianSVMBaseline(BaseFewShotBaseline):
         )
 
 
+# k-Nearest Neighbors (kNN)
+
+
+class _SafeKNeighborsClassifier(BaseEstimator, ClassifierMixin):
+    """KNeighborsClassifier wrapper that clamps n_neighbors to the training fold size."""
+
+    def __init__(
+        self,
+        n_neighbors: int = 5,
+        weights: str = "uniform",
+        metric: str = "euclidean",
+    ) -> None:
+        self.n_neighbors = n_neighbors
+        self.weights = weights
+        self.metric = metric
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> _SafeKNeighborsClassifier:
+        X_arr = np.asarray(X, dtype=np.float64)
+        effective_k = max(1, min(int(self.n_neighbors), len(X_arr)))
+        self.knn_ = KNeighborsClassifier(
+            n_neighbors=effective_k,
+            weights=self.weights,
+            metric=self.metric,
+        )
+        self.knn_.fit(X_arr, y)
+        self.classes_ = self.knn_.classes_
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.knn_.predict(np.asarray(X, dtype=np.float64))
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        return self.knn_.predict_proba(np.asarray(X, dtype=np.float64))
+
+
+class KNNBaseline(BaseFewShotBaseline):
+    """k-Nearest Neighbors classifier with fold-safe neighborhood bounds."""
+
+    model_name = "knn"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        return {
+            "n_neighbors": [1, 3, 5, 7, 9],
+            "weights": ["uniform", "distance"],
+            "metric": ["euclidean", "manhattan", "chebyshev"],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return _SafeKNeighborsClassifier(
+            n_neighbors=params["n_neighbors"],
+            weights=params["weights"],
+            metric=params["metric"],
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     "rbf_svm": RBFSVMBaseline,
     "laplacian_svm": LaplacianSVMBaseline,
+    "knn": KNNBaseline,
 }
 
 
