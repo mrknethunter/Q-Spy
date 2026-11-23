@@ -28,10 +28,9 @@ class EmbedResult:
     meta: dict = field(default_factory=dict)
 
 
-def estimate_usage(n_points: int, precision: float, n_subjobs: int = 1) -> float:
-    """IBM's documented estimate (2 s per sub-job + 0.35 ms per execution) + 30%; X, Y, Z need 3 settings per point."""
-    executions = 3 * n_points * math.ceil(1.0 / precision**2)
-    return 1.3 * (2.0 * n_subjobs + 0.35e-3 * executions)
+def estimate_usage(n_circuits: int, shots: int, n_subjobs: int = 1) -> float:
+    """IBM's documented estimate (2 s per sub-job + 0.35 ms per execution) with a 30% margin."""
+    return 1.3 * (2.0 * n_subjobs + 0.35e-3 * n_circuits * shots)
 
 
 def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precision: float = 0.03,
@@ -65,8 +64,9 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
         return EmbedResult(evs_to_bloch(evs, n), meta)
 
     if backend == "HW":
-        meta["estimated_qpu_s"] = estimate_usage(len(X_tilde), precision)
-        meta["dry_run"] = not submit
+        n_circuits, shots = 3 * len(X_tilde), math.ceil(1.0 / precision**2)  # X, Y, Z bases: 3 settings per point
+        meta.update(n_circuits=n_circuits, shots=shots, executions=n_circuits * shots,
+                    estimated_qpu_s=estimate_usage(n_circuits, shots), dry_run=not submit)
         if not submit:
             from qiskit_ibm_runtime.fake_provider import FakeKingston
             _compile(qc, FakeKingston(), seed, meta)  # catch compile errors and report depth before spending QPU time
@@ -83,6 +83,7 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
         o.dynamical_decoupling.enable = True
         if seed is not None and hasattr(o, "simulator"):
             o.simulator.seed_simulator = seed  # only fake devices take a simulator seed
+        meta["calibration"] = _calibration(dev, meta["layout"])
         job = est.run([(isa, bloch_observables(n, isa.layout), angles)])
         meta["job_ids"] = [job.job_id()]
         evs = job.result()[0].data.evs
@@ -101,3 +102,16 @@ def _compile(qc, device, seed, meta):
     meta["layout"] = [int(q) for q in isa.layout.final_index_layout()]
     meta["two_qubit_depth"] = int(isa.depth(lambda inst: inst.operation.num_qubits == 2))
     return isa
+
+
+def _calibration(device, layout):
+    """Calibration of the physical qubits and couplers this job uses, as reported at submission."""
+    t = device.target
+    qubits = {}
+    for q in layout:
+        props = device.qubit_properties(q)
+        qubits[q] = {"t1": getattr(props, "t1", None), "t2": getattr(props, "t2", None),
+                     "readout_error": t["measure"][(q,)].error if (q,) in t["measure"] else None}
+    two_qubit = {f"{name}:{a}-{b}": p.error for name in t.operation_names if t.operation_from_name(name).num_qubits == 2
+                 for (a, b), p in t[name].items() if a in layout and b in layout and p is not None}
+    return {"last_update": str(device.properties().last_update_date), "qubits": qubits, "two_qubit_errors": two_qubit}

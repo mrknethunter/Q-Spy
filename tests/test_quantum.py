@@ -92,6 +92,13 @@ def test_embed_l1_adds_unbiased_shot_noise_of_requested_size():
     assert 0.02 < diff.std() < 0.1 and abs(diff.mean()) < 0.03
 
 
+def test_embed_l1_converges_to_l0_as_precision_shrinks():
+    cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
+    exact = embed(X, cfg, "L0").B
+    err = [np.abs(embed(X, cfg, "L1", precision=p, seed=1).B - exact).mean() for p in (0.1, 0.01)]
+    assert err[1] < err[0] / 5
+
+
 def test_embed_l2_compiles_for_fake_kingston_and_stays_close_to_exact():
     cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
     res = embed(X[:4], cfg, "L2", precision=0.05, seed=1)
@@ -103,8 +110,15 @@ def test_embed_l2_compiles_for_fake_kingston_and_stays_close_to_exact():
 
 def test_estimate_usage_matches_ibm_formula():
     from quantum.embed import estimate_usage
-    # 120 points x 3 measurement settings x ceil(1/0.03^2)=1112 shots = 400 320 executions
-    assert estimate_usage(n_points=120, precision=0.03) == pytest.approx(1.3 * (2 + 0.35e-3 * 400_320))
+    assert estimate_usage(n_circuits=360, shots=1112) == pytest.approx(1.3 * (2 + 0.35e-3 * 360 * 1112))
+
+
+def test_hw_dry_run_reports_circuits_shots_and_executions():
+    from quantum.embed import estimate_usage
+    meta = embed(X[:10], EmbedConfig(4, 2, 1.0), "HW", precision=0.03).meta
+    # one circuit per point per measurement basis (X, Y, Z); shots per circuit = ceil(1 / 0.03^2)
+    assert (meta["n_circuits"], meta["shots"], meta["executions"]) == (30, 1112, 30 * 1112)
+    assert meta["estimated_qpu_s"] == pytest.approx(estimate_usage(30, 1112))
 
 
 def test_embed_hw_is_a_dry_run_unless_submit(monkeypatch):
@@ -125,4 +139,7 @@ def test_embed_hw_submit_path_runs_locally_on_a_small_fake_device():
     res = embed(X[:4], cfg, "HW", precision=0.05, submit=True, device=FakeManilaV2(), seed=1)
     assert res.B.shape == (4, 3, 3) and res.meta["dry_run"] is False
     assert res.meta["job_ids"] and len(res.meta["layout"]) == 3
+    cal = res.meta["calibration"]
+    assert set(cal["qubits"]) == set(res.meta["layout"]) and cal["last_update"]
+    assert all(v["readout_error"] is not None for v in cal["qubits"].values()) and cal["two_qubit_errors"]
     assert np.corrcoef(res.B.ravel(), embed(X[:4], cfg, "L0").B.ravel())[0, 1] > 0.7
