@@ -15,6 +15,7 @@ from sklearn.svm import SVC
 from sklearn.metrics.pairwise import laplacian_kernel
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import HistGradientBoostingClassifier
 
 
 class BaseBudgetedModel(ABC):
@@ -339,13 +340,41 @@ class LogisticRegressionBaseline(BaseFewShotBaseline):
         )
 
 
+# Histogram Gradient Boosting
+
+class HistGradientBoostingBaseline(BaseFewShotBaseline):
+    """Histogram-based Gradient Boosting with low min_samples_leaf for k-shot regimes."""
+
+    model_name = "hist_gradient_boosting"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        return {
+            "learning_rate": [0.03, 0.1, 0.2],
+            "max_iter": [50, 100, 200],
+            "max_leaf_nodes": [7, 15, 31],
+            "min_samples_leaf": [1, 2, 4, 8],
+            "l2_regularization": [0.0, 1.0],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return HistGradientBoostingClassifier(
+            learning_rate=params["learning_rate"],
+            max_iter=params["max_iter"],
+            max_leaf_nodes=params["max_leaf_nodes"],
+            min_samples_leaf=params["min_samples_leaf"],
+            l2_regularization=params["l2_regularization"],
+            early_stopping=False,
+            random_state=self.seed,
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     "rbf_svm": RBFSVMBaseline,
     "laplacian_svm": LaplacianSVMBaseline,
     "knn": KNNBaseline,
     "logistic_regression": LogisticRegressionBaseline,
+    "hist_gradient_boosting": HistGradientBoostingBaseline,
 }
-
 
 def build_baseline(
     name: str,

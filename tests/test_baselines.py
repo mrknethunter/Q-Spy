@@ -11,6 +11,7 @@ FEWSHOT_MODELS = [
     "laplacian_svm",
     "knn",
     "logistic_regression",
+    "hist_gradient_boosting",
 ]
 
 
@@ -197,4 +198,16 @@ def test_logistic_regression_tunes_regularization_c(fewshot_glitch_fixture) -> N
 
     assert "C" in model.best_params_
     assert model.best_params_["C"] in {1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 1000.0}
+    assert model.score_samples(X_test).shape == (len(X_test), 6)
+
+def test_hist_gradient_boosting_splits_in_small_k_regime(fewshot_glitch_fixture) -> None:
+    """Verify lowered min_samples_leaf enables tree splits when N=30 (6 classes, k=5)."""
+    X_train, y_train, X_test, _ = fewshot_glitch_fixture
+
+    model = build_baseline("hist_gradient_boosting", budget=12, seed=42, cv_folds=5)
+    model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+
+    assert model.best_params_["min_samples_leaf"] <= 8
+    assert len(np.unique(preds)) > 1
     assert model.score_samples(X_test).shape == (len(X_test), 6)
