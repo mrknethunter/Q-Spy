@@ -8,10 +8,10 @@ from typing import Any
 import numpy as np
 from sklearn.base import BaseEstimator, clone
 from sklearn.metrics import f1_score
-from sklearn.model_selection import ParameterGrid, StratifiedKFold
+from sklearn.model_selection import KFold, ParameterGrid, StratifiedKFold
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from sklearn.svm import SVC
+from sklearn.svm import SVC, OneClassSVM
 from sklearn.metrics.pairwise import laplacian_kernel
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
@@ -101,6 +101,10 @@ class BaseBudgetedModel(ABC):
         }
 
 
+#-----------------------------------------------------------------------------------------------
+# Few-Shot classifiers
+#-----------------------------------------------------------------------------------------------
+
 class BaseFewShotBaseline(BaseBudgetedModel, ABC):
     """Base class for few-shot classifiers."""
 
@@ -163,10 +167,6 @@ class BaseFewShotBaseline(BaseBudgetedModel, ABC):
             return self.best_estimator_.predict_proba(X_arr)
         raise NotImplementedError(f"{self.model_name} does not expose continuous scores.")
 
-
-#-----------------------------------------------------------------------------------------------
-# Few-Shot models
-#-----------------------------------------------------------------------------------------------
 
 # SVM with RBF kernel
 
@@ -368,12 +368,126 @@ class HistGradientBoostingBaseline(BaseFewShotBaseline):
         )
 
 
+#-----------------------------------------------------------------------------------------------
+# NOVELTY classifiers
+#-----------------------------------------------------------------------------------------------
+
+
+class BaseNoveltyBaseline(BaseBudgetedModel, ABC):
+    """Base class for all 3 classical novelty detectors (Protocol 2).
+
+    Conventions:
+    - `fit(X, y=None)` expects `X` to contain ONLY known glitch families (no outliers).
+    - `predict(X)` returns `0` for known (inlier) and `1` for novel/anomalous (outlier).
+    - `score_samples(X)` returns continuous anomaly scores where higher = more anomalous.
+    """
+
+    task = "novelty"
+
+    def _resolve_novelty_n_splits(self, n_samples: int) -> int:
+        if n_samples < 2:
+            raise ValueError(f"Need at least 2 samples for inner CV, got {n_samples}.")
+        return min(self.cv_folds, n_samples)
+
+    def _score_known_validation_fold(
+        self,
+        estimator: BaseEstimator,
+        X_val: np.ndarray,
+        params: dict[str, Any],
+    ) -> float:
+        """Evaluate hyperparameter calibration on a known-only validation fold."""
+        raw_preds = estimator.predict(X_val)  # sklearn: +1 inlier, -1 outlier
+        anomaly_scores = -estimator.decision_function(X_val)
+
+        # Reject collapsed/constant kernels that cannot rank anomalies
+        if float(np.std(anomaly_scores)) < 1e-12:
+            return -1.0
+
+        val_fpr = float(np.mean(raw_preds == -1))
+        target_fpr = float(params.get("nu", params.get("contamination", 0.05)))
+        excess_fpr_penalty = 0.5 * max(0.0, val_fpr - 0.25)
+        return float(1.0 - abs(val_fpr - target_fpr) - excess_fpr_penalty)
+
+    def fit(self, X: np.ndarray, y: np.ndarray | None = None) -> BaseNoveltyBaseline:
+        X_arr = np.asarray(X, dtype=np.float64)
+        configs = self._sample_configurations()
+        n_splits = self._resolve_novelty_n_splits(len(X_arr))
+
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
+        splits = list(kf.split(X_arr))
+
+        best_score = -np.inf
+        best_params: dict[str, Any] = {}
+        self.cv_results_ = []
+
+        for params in configs:
+            fold_scores: list[float] = []
+            for train_idx, val_idx in splits:
+                est = self._build_estimator(params)
+                est.fit(X_arr[train_idx])
+                fold_scores.append(
+                    self._score_known_validation_fold(est, X_arr[val_idx], params)
+                )
+
+            mean_score = float(np.mean(fold_scores))
+            self.cv_results_.append({"params": params, "mean_calibration_score": mean_score})
+
+            if mean_score > best_score:
+                best_score = mean_score
+                best_params = params
+
+        self.n_configs_evaluated_ = len(configs)
+        self.best_params_ = dict(best_params)
+        self.best_cv_score_ = best_score
+
+        final_estimator = self._build_estimator(self.best_params_)
+        final_estimator.fit(X_arr)
+        self.best_estimator_ = final_estimator
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        if self.best_estimator_ is None:
+            raise RuntimeError("Model must be fitted before calling predict().")
+        raw_preds = self.best_estimator_.predict(np.asarray(X, dtype=np.float64))
+        return (raw_preds == -1).astype(int)
+
+    def score_samples(self, X: np.ndarray) -> np.ndarray:
+        if self.best_estimator_ is None:
+            raise RuntimeError("Model must be fitted before calling score_samples().")
+        X_arr = np.asarray(X, dtype=np.float64)
+        return -np.asarray(self.best_estimator_.decision_function(X_arr), dtype=np.float64)
+
+
+# RBF One-Class SVM
+
+class RBFOCSVMBaseline(BaseNoveltyBaseline):
+    """One-Class SVM with RBF kernel tuning nu and gamma on known families."""
+
+    model_name = "rbf_ocsvm"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        return {
+            "nu": [0.01, 0.05, 0.1, 0.15, 0.2],
+            "gamma": ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return OneClassSVM(
+            kernel="rbf",
+            nu=params["nu"],
+            gamma=params["gamma"],
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
+    # Few-shot classifiers
     "rbf_svm": RBFSVMBaseline,
     "laplacian_svm": LaplacianSVMBaseline,
     "knn": KNNBaseline,
     "logistic_regression": LogisticRegressionBaseline,
     "hist_gradient_boosting": HistGradientBoostingBaseline,
+    # Novelty detectors
+    "rbf_ocsvm": RBFOCSVMBaseline,
 }
 
 def build_baseline(

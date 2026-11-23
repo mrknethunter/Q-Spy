@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from sklearn.metrics import balanced_accuracy_score, f1_score
 from models.baselines import build_baseline
 
+from sklearn.metrics import (
+    average_precision_score,
+    balanced_accuracy_score,
+    f1_score,
+    roc_auc_score,
+    roc_curve,
+)
 
 FEWSHOT_MODELS = [
     "rbf_svm",
@@ -14,6 +20,9 @@ FEWSHOT_MODELS = [
     "hist_gradient_boosting",
 ]
 
+NOVELTY_MODELS = [
+    "rbf_ocsvm",
+]
 
 @pytest.fixture
 def fewshot_glitch_fixture() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -37,6 +46,31 @@ def fewshot_glitch_fixture() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.nda
     )
     y_test = np.repeat(np.arange(n_classes), n_test_per_class)
     return X_train, y_train, X_test, y_test
+
+
+@pytest.fixture
+def novelty_loco_fixture() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Synthetic fixture mirroring Protocol 2 (LOCO): 6 known classes + 1 unseen O3 class."""
+    rng = np.random.default_rng(321)
+    n_known_classes = 6
+    n_features = 7
+
+    # Known families (inliers) used for training (no labels required)
+    X_train_known = np.vstack(
+        [rng.normal(loc=c * 1.0, scale=0.6, size=(25, n_features)) for c in range(n_known_classes)]
+    )
+
+    # Test pool: held-out known inliers (0) + unseen novel glitch family e.g. Fast_Scattering (1)
+    X_test_known = np.vstack(
+        [rng.normal(loc=c * 1.0, scale=0.6, size=(10, n_features)) for c in range(n_known_classes)]
+    )
+    X_test_novel = rng.normal(loc=8.5, scale=0.7, size=(30, n_features))
+
+    X_test = np.vstack([X_test_known, X_test_novel])
+    y_test = np.concatenate(
+        [np.zeros(len(X_test_known), dtype=int), np.ones(len(X_test_novel), dtype=int)]
+    )
+    return X_train_known, X_test, y_test
 
 
 # CONTRACT & ERROR HANDLING TESTS
@@ -211,3 +245,92 @@ def test_hist_gradient_boosting_splits_in_small_k_regime(fewshot_glitch_fixture)
     assert model.best_params_["min_samples_leaf"] <= 8
     assert len(np.unique(preds)) > 1
     assert model.score_samples(X_test).shape == (len(X_test), 6)
+
+
+# NOVELTY DETECTION / LOCO UNIFIED TESTS
+
+
+@pytest.mark.parametrize("model_name", NOVELTY_MODELS)
+def test_novelty_unfitted_model_raises(model_name: str, novelty_loco_fixture) -> None:
+    _, X_test, _ = novelty_loco_fixture
+    model = build_baseline(model_name, budget=4, seed=42)
+
+    with pytest.raises(RuntimeError, match="fitted"):
+        model.predict(X_test)
+
+    with pytest.raises(RuntimeError, match="fitted"):
+        model.score_samples(X_test)
+
+
+@pytest.mark.parametrize("model_name", NOVELTY_MODELS)
+def test_novelty_fit_predict_and_metrics(model_name: str, novelty_loco_fixture) -> None:
+    X_train_known, X_test, y_test = novelty_loco_fixture
+
+    model = build_baseline(model_name, budget=10, seed=42, cv_folds=5)
+    model.fit(X_train_known)  # Unlabelled known families only
+
+    y_pred = model.predict(X_test)
+    anomaly_scores = model.score_samples(X_test)
+
+    auroc = roc_auc_score(y_test, anomaly_scores)
+    avg_prec = average_precision_score(y_test, anomaly_scores)
+    fpr, tpr, _ = roc_curve(y_test, anomaly_scores)
+    tpr_at_1pct_fpr = float(np.interp(0.01, fpr, tpr))
+    report = model.get_budget_report()
+
+    print(f"\n--- [NOVELTY: {model_name.upper()}] ---")
+    print(f"Budget valutato : {report['n_configs_evaluated']}/{report['budget_limit']}")
+    print(f"Best params     : {report['best_params']}")
+    print(f"CV Calib Score  : {report['best_cv_score']:.4f}")
+    print(f"AUROC: {auroc:.4f} | AP: {avg_prec:.4f} | TPR@1%FPR: {tpr_at_1pct_fpr:.4f}")
+    print(
+        f"Score medio     : known={anomaly_scores[y_test == 0].mean():.3f} "
+        f"vs novel={anomaly_scores[y_test == 1].mean():.3f}"
+    )
+
+    assert y_pred.shape == (len(y_test),)
+    assert set(np.unique(y_pred)).issubset({0, 1})
+    assert anomaly_scores.shape == (len(y_test),)
+    assert anomaly_scores[y_test == 1].mean() > anomaly_scores[y_test == 0].mean()
+    assert auroc > 0.85
+    assert avg_prec > 0.80
+
+
+@pytest.mark.parametrize("model_name", NOVELTY_MODELS)
+def test_novelty_equal_budget_report(model_name: str, novelty_loco_fixture) -> None:
+    X_train_known, _, _ = novelty_loco_fixture
+    budget = 8
+
+    model = build_baseline(model_name, budget=budget, seed=42, cv_folds=5)
+    model.fit(X_train_known)
+    report = model.get_budget_report()
+
+    assert report["model_name"] == model_name
+    assert report["task"] == "novelty"
+    assert report["budget_limit"] == budget
+    assert report["n_configs_evaluated"] == budget
+    assert isinstance(report["best_params"], dict) and len(report["best_params"]) > 0
+    assert np.isfinite(report["best_cv_score"])
+
+
+@pytest.mark.parametrize("model_name", NOVELTY_MODELS)
+def test_novelty_seed_determinism(model_name: str, novelty_loco_fixture) -> None:
+    X_train_known, X_test, _ = novelty_loco_fixture
+
+    model_a = build_baseline(model_name, budget=10, seed=7).fit(X_train_known)
+    model_b = build_baseline(model_name, budget=10, seed=7).fit(X_train_known)
+
+    assert model_a.best_params_ == model_b.best_params_
+    assert model_a.best_cv_score_ == model_b.best_cv_score_
+    np.testing.assert_array_equal(model_a.predict(X_test), model_b.predict(X_test))
+    np.testing.assert_allclose(model_a.score_samples(X_test), model_b.score_samples(X_test))
+
+
+def test_rbf_ocsvm_tunes_nu_and_gamma(novelty_loco_fixture) -> None:
+    X_train_known, _, _ = novelty_loco_fixture
+
+    model = build_baseline("rbf_ocsvm", budget=12, seed=42, cv_folds=5)
+    model.fit(X_train_known)
+
+    assert "nu" in model.best_params_
+    assert "gamma" in model.best_params_
