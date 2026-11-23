@@ -10,6 +10,8 @@ from sklearn.base import BaseEstimator, clone
 from sklearn.metrics import f1_score
 from sklearn.model_selection import ParameterGrid, StratifiedKFold
 from sklearn.svm import SVC
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics.pairwise import laplacian_kernel
 
 
 class BaseBudgetedModel(ABC):
@@ -178,8 +180,79 @@ class RBFSVMBaseline(BaseFewShotBaseline):
             random_state=self.seed,
         )
 
+# Scikit-learn doesn't natively support Laplacian, this is a wrapper class for the Laplacian kernel
+
+class _LaplacianSVC(BaseEstimator, ClassifierMixin):
+    """Scikit-learn compatible SVC wrapper using an exact Laplacian kernel."""
+
+    def __init__(
+        self,
+        C: float = 1.0,
+        gamma: float | str | None = "scale",
+        random_state: int | None = None,
+    ) -> None:
+        self.C = C
+        self.gamma = gamma
+        self.random_state = random_state
+
+    def _resolve_gamma(self, X: np.ndarray) -> float:
+        n_features = X.shape[1]
+        if self.gamma is None or self.gamma == "auto":
+            return 1.0 / n_features
+        if self.gamma == "scale":
+            x_var = float(np.var(X))
+            return 1.0 / (n_features * x_var) if x_var > 0.0 else 1.0 / n_features
+        return float(self.gamma)
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> _LaplacianSVC:
+        self.X_train_ = np.asarray(X, dtype=np.float64)
+        self.gamma_ = self._resolve_gamma(self.X_train_)
+        K_train = laplacian_kernel(self.X_train_, self.X_train_, gamma=self.gamma_)
+        self.svc_ = SVC(
+            kernel="precomputed",
+            C=self.C,
+            decision_function_shape="ovr",
+            random_state=self.random_state,
+        )
+        self.svc_.fit(K_train, y)
+        self.classes_ = self.svc_.classes_
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        K_test = laplacian_kernel(
+            np.asarray(X, dtype=np.float64), self.X_train_, gamma=self.gamma_
+        )
+        return self.svc_.predict(K_test)
+
+    def decision_function(self, X: np.ndarray) -> np.ndarray:
+        K_test = laplacian_kernel(
+            np.asarray(X, dtype=np.float64), self.X_train_, gamma=self.gamma_
+        )
+        return self.svc_.decision_function(K_test)
+
+
+class LaplacianSVMBaseline(BaseFewShotBaseline):
+    """Support Vector Classifier with Laplacian kernel and One-vs-Rest strategy."""
+
+    model_name = "laplacian_svm"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        return {
+            "C": [1e-2, 1e-1, 1.0, 10.0, 100.0],
+            "gamma": ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return _LaplacianSVC(
+            C=params["C"],
+            gamma=params["gamma"],
+            random_state=self.seed,
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     "rbf_svm": RBFSVMBaseline,
+    "laplacian_svm": LaplacianSVMBaseline,
 }
 
 
