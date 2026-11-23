@@ -14,6 +14,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.svm import SVC
 from sklearn.metrics.pairwise import laplacian_kernel
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 class BaseBudgetedModel(ABC):
@@ -166,6 +167,7 @@ class BaseFewShotBaseline(BaseBudgetedModel, ABC):
 # Few-Shot models
 #-----------------------------------------------------------------------------------------------
 
+# SVM with RBF kernel
 
 class RBFSVMBaseline(BaseFewShotBaseline):
     """Support Vector Classifier with RBF kernel and One-vs-Rest strategy."""
@@ -187,6 +189,7 @@ class RBFSVMBaseline(BaseFewShotBaseline):
             random_state=self.seed,
         )
 
+# SVM with Laplacian kernel
 # Scikit-learn doesn't natively support Laplacian, this is a wrapper class for the Laplacian kernel
 
 class _LaplacianSVC(BaseEstimator, ClassifierMixin):
@@ -312,10 +315,35 @@ class KNNBaseline(BaseFewShotBaseline):
         )
 
 
+# Logistic Regression
+
+class LogisticRegressionBaseline(BaseFewShotBaseline):
+    """Multinomial Logistic Regression with L2 regularization C in the search budget."""
+
+    model_name = "logistic_regression"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        return {
+            "C": [1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 1000.0],
+            "class_weight": [None, "balanced"],
+            "fit_intercept": [True, False],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return LogisticRegression(
+            C=params["C"],
+            class_weight=params["class_weight"],
+            fit_intercept=params["fit_intercept"],
+            max_iter=1000,
+            random_state=self.seed,
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     "rbf_svm": RBFSVMBaseline,
     "laplacian_svm": LaplacianSVMBaseline,
     "knn": KNNBaseline,
+    "logistic_regression": LogisticRegressionBaseline,
 }
 
 

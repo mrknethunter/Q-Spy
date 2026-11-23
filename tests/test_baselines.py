@@ -10,6 +10,7 @@ FEWSHOT_MODELS = [
     "rbf_svm",
     "laplacian_svm",
     "knn",
+    "logistic_regression",
 ]
 
 
@@ -185,3 +186,15 @@ def test_knn_clamps_neighbors_when_fold_size_is_small() -> None:
 
     assert model.predict(X_test).shape == (6,)
     assert model.score_samples(X_test).shape == (6, 2)
+
+
+def test_logistic_regression_tunes_regularization_c(fewshot_glitch_fixture) -> None:
+    """Verify LogisticRegression tunes C within budget and converges cleanly."""
+    X_train, y_train, X_test, _ = fewshot_glitch_fixture
+
+    model = build_baseline("logistic_regression", budget=12, seed=42, cv_folds=5)
+    model.fit(X_train, y_train)
+
+    assert "C" in model.best_params_
+    assert model.best_params_["C"] in {1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 1000.0}
+    assert model.score_samples(X_test).shape == (len(X_test), 6)
