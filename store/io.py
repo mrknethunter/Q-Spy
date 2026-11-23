@@ -1,4 +1,3 @@
-"""Bloch-vector store contract (L-02). Implemented by I-04; see docs/contracts.md."""
 from __future__ import annotations
 
 from pathlib import Path

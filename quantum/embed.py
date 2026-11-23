@@ -1,8 +1,3 @@
-"""Quantum embedding (L-02 contract): Q-03 exact (L0), Q-04 shots (L1) and fake Kingston (L2), Q-05 IBM hardware (HW).
-
-Every tier evaluates the same feature-map circuit and the same 3n single-qubit Pauli observables as one broadcast
-Estimator job; only the Estimator and the device change. See docs/contracts.md.
-"""
 from __future__ import annotations
 
 import math
@@ -29,27 +24,18 @@ class EmbedConfig:
 
 @dataclass
 class EmbedResult:
-    B: np.ndarray | None  # (N, n_qubits, 3): <X_q>, <Y_q>, <Z_q>; None for an HW dry run
+    B: np.ndarray | None
     meta: dict = field(default_factory=dict)
 
 
 def estimate_usage(n_points: int, precision: float, n_subjobs: int = 1) -> float:
-    """IBM estimate of QPU seconds (2 s per sub-job + 0.35 ms per execution) with a 30% margin.
-
-    One point needs 3 measurement settings (X, Y and Z bases); shots per setting = ceil(1 / precision^2).
-    """
+    """IBM's documented estimate (2 s per sub-job + 0.35 ms per execution) + 30%; X, Y, Z need 3 settings per point."""
     executions = 3 * n_points * math.ceil(1.0 / precision**2)
     return 1.3 * (2.0 * n_subjobs + 0.35e-3 * executions)
 
 
 def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precision: float = 0.03,
           seed: int | None = None, submit: bool = False, device=DEFAULT_DEVICE) -> EmbedResult:
-    """Bloch vectors of U_{s,L}(x)|0> for every row of X_tilde.
-
-    backend: "L0" exact, "L1" shot noise, "L2" noise model of fake Kingston, "HW" IBM hardware.
-    precision: target standard error per expectation value (L1, L2, HW).
-    HW is a dry run (no network, no QPU time) unless submit=True; `device` is a backend name or object.
-    """
     X_tilde = np.asarray(X_tilde, dtype=np.float64)
     n = cfg.n_qubits
     qc = feature_map(n, cfg.layers, X_tilde.shape[1], cfg.entangle)
@@ -57,7 +43,7 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
     meta = {"tier": backend, "embed_config": asdict(cfg), "n_points": len(X_tilde)}
 
     if backend == "L0":
-        # Exact expectation values from the statevector (no sampling): ~70x faster than StatevectorEstimator.
+        # exact (no sampling) and ~70x faster than StatevectorEstimator
         est = AerEstimator(options={"backend_options": {"method": "statevector"}, "run_options": {"approximation": True}})
         evs = est.run([(qc, bloch_observables(n), angles)]).result()[0].data.evs
         return EmbedResult(evs_to_bloch(evs, n), meta)
@@ -72,7 +58,7 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
         from qiskit_ibm_runtime.fake_provider import FakeKingston
         fake = FakeKingston()
         isa = _compile(qc, fake, seed, meta)
-        # shortcut: no server-side mitigation (TREX, twirling) here, so L2 is a pessimistic estimate of HW.
+        # shortcut: no server-side mitigation (TREX, twirling), so L2 is pessimistic; recalibrate on the pilot HW_vs_L2
         est = AerEstimator(options={"default_precision": precision, "backend_options": {
             "noise_model": NoiseModel.from_backend(fake), "seed_simulator": seed}})
         evs = est.run([(isa, bloch_observables(n, isa.layout), angles)]).result()[0].data.evs
@@ -83,7 +69,7 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
         meta["dry_run"] = not submit
         if not submit:
             from qiskit_ibm_runtime.fake_provider import FakeKingston
-            _compile(qc, FakeKingston(), seed, meta)  # offline check that the circuit compiles, and its 2-qubit depth
+            _compile(qc, FakeKingston(), seed, meta)  # catch compile errors and report depth before spending QPU time
             return EmbedResult(None, meta)
         from qiskit_ibm_runtime import EstimatorV2, QiskitRuntimeService
         dev = QiskitRuntimeService().backend(device) if isinstance(device, str) else device
@@ -91,18 +77,18 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
         est = EstimatorV2(mode=dev)
         o = est.options
         o.default_precision = precision
-        o.resilience.measure_mitigation = True  # TREX readout mitigation
+        o.resilience.measure_mitigation = True
         o.twirling.enable_gates = True
         o.twirling.enable_measure = True
         o.dynamical_decoupling.enable = True
         if seed is not None and hasattr(o, "simulator"):
-            o.simulator.seed_simulator = seed  # only meaningful on fake devices
+            o.simulator.seed_simulator = seed  # only fake devices take a simulator seed
         job = est.run([(isa, bloch_observables(n, isa.layout), angles)])
         meta["job_ids"] = [job.job_id()]
         evs = job.result()[0].data.evs
         try:
             meta["usage_s"] = job.usage()
-        except Exception:  # local fake jobs and some runtime versions do not report usage
+        except Exception:  # local fake jobs do not report usage
             meta["usage_s"] = None
         return EmbedResult(evs_to_bloch(evs, n), meta)
 
@@ -110,7 +96,6 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
 
 
 def _compile(qc, device, seed, meta):
-    """Transpile to the device's native gates and layout; record what the hardware will actually run."""
     isa = generate_preset_pass_manager(optimization_level=3, backend=device, seed_transpiler=seed).run(qc)
     meta["backend_name"] = device.name
     meta["layout"] = [int(q) for q in isa.layout.final_index_layout()]

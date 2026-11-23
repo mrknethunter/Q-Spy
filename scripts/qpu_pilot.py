@@ -1,12 +1,7 @@
-"""H-01 pilot: embed a few points on every tier and compare them with the exact result.
+"""Embed a few points on every tier and compare each with the exact result; results go to results/pilot/.
 
-Dry run (default): runs L0, L1, L2 locally and prints the estimated QPU seconds. Nothing is sent to IBM.
-    python scripts/qpu_pilot.py
-Real run on IBM hardware (needs the lead's "QPU approved" comment, see docs/qpu_policy.md):
-    python scripts/qpu_pilot.py --submit [--device ibm_kingston]
-
-Features are synthetic until D-02/D-03 are merged: the pilot checks the code path, the hardware noise level and the
-usage estimate, not classification. Results go to results/pilot/<run_id>.json (+ .npz with all Bloch vectors).
+    python scripts/qpu_pilot.py             dry run: L0, L1, L2 locally + estimated QPU seconds
+    python scripts/qpu_pilot.py --submit    real IBM run (needs "QPU approved", docs/qpu_policy.md)
 """
 from __future__ import annotations
 
@@ -18,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # run as a plain script from the repo root
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # allow `python scripts/qpu_pilot.py`
 from quantum.embed import DEFAULT_DEVICE, EmbedConfig, embed  # noqa: E402
 from tests.fixtures.synthetic import synthetic_curated, synthetic_features  # noqa: E402
 
@@ -29,7 +24,7 @@ def _compare(B, ref):
 
 def run_pilot(points=10, qubits=8, layers=2, s=1.0, precision=0.03, submit=False, device=DEFAULT_DEVICE,
               seed=7, out_dir="results/pilot"):
-    X = synthetic_features(synthetic_curated(seed=seed))
+    X = synthetic_features(synthetic_curated(seed=seed))  # shortcut: synthetic until D-02/D-03 are in main
     X = X[np.random.default_rng(seed).choice(len(X), points, replace=False)]
     cfg = EmbedConfig(qubits, layers, s)
     B = {"L0": embed(X, cfg, "L0").B}

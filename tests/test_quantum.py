@@ -1,4 +1,3 @@
-"""Q-01..Q-05: feature map, Bloch observables, embed on every tier."""
 from __future__ import annotations
 
 import numpy as np
@@ -11,7 +10,7 @@ X = synthetic_features(synthetic_curated())[:12]
 
 
 def numpy_reference_bloch(X, cfg):
-    """Independent dense-statevector implementation of U_{s,L}(x)|0> and its single-qubit Bloch vectors."""
+    """Independent dense-statevector implementation, so a Qiskit ordering or sign error cannot pass unnoticed."""
     n, d = cfg.n_qubits, X.shape[1]
     paulis = [np.array([[0, 1], [1, 0]], complex), np.array([[0, -1j], [1j, 0]]), np.diag([1, -1]).astype(complex)]
     idx = np.arange(2 ** n)
@@ -38,14 +37,13 @@ def numpy_reference_bloch(X, cfg):
     return np.array(out)
 
 
-# --- Q-01 feature map ---------------------------------------------------------------------------
 @pytest.mark.parametrize("entangle, n_cz", [(True, 2 * 3), (False, 0)])
 def test_feature_map_gates(entangle, n_cz):
     from quantum.feature_map import feature_map
     qc = feature_map(n_qubits=4, layers=2, d=7, entangle=entangle)
     ops = qc.count_ops()
     assert ops.get("cz", 0) == n_cz and ops["ry"] == 8 and ops["rz"] == 8
-    assert qc.num_parameters == 4  # n < d: qubit q gets feature q
+    assert qc.num_parameters == 4
 
 
 @pytest.mark.parametrize("n", [2, 7, 8, 14])
@@ -58,10 +56,9 @@ def test_feature_map_cz_chain_has_two_moments_per_layer(n):
 def test_feature_map_reuploads_features_cyclically():
     from quantum.feature_map import feature_map
     qc = feature_map(n_qubits=9, layers=1, d=7)
-    assert qc.num_parameters == 7  # qubits 7, 8 reuse features 0, 1
+    assert qc.num_parameters == 7
 
 
-# --- Q-02 observables -----------------------------------------------------------------------------
 def test_bloch_of_zero_state_is_plus_z():
     from qiskit import QuantumCircuit
     from qiskit.primitives import StatevectorEstimator
@@ -70,7 +67,6 @@ def test_bloch_of_zero_state_is_plus_z():
     assert np.allclose(evs_to_bloch(evs, 3), [[[0, 0, 1]] * 3])
 
 
-# --- Q-03 embed, exact tier ------------------------------------------------------------------------
 def test_embed_l0_product_state_matches_closed_form():
     cfg = EmbedConfig(n_qubits=3, layers=1, s=0.8, entangle=False)
     t = 0.8 * np.pi * X[:, :3]
@@ -89,7 +85,6 @@ def test_embed_rejects_unknown_tier():
         embed(X, EmbedConfig(2, 1, 1.0), "L9")
 
 
-# --- Q-04 shot-noise (L1) and noisy-emulation (L2) tiers ----------------------------------------
 def test_embed_l1_adds_unbiased_shot_noise_of_requested_size():
     cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
     exact = embed(X, cfg, "L0").B
@@ -106,7 +101,6 @@ def test_embed_l2_compiles_for_fake_kingston_and_stays_close_to_exact():
     assert np.corrcoef(res.B.ravel(), embed(X[:4], cfg, "L0").B.ravel())[0, 1] > 0.8
 
 
-# --- Q-05 IBM hardware tier: dry run by default, usage estimate ------------------------------------
 def test_estimate_usage_matches_ibm_formula():
     from quantum.embed import estimate_usage
     # 120 points x 3 measurement settings x ceil(1/0.03^2)=1112 shots = 400 320 executions
@@ -125,7 +119,7 @@ def test_embed_hw_is_a_dry_run_unless_submit(monkeypatch):
 
 
 def test_embed_hw_submit_path_runs_locally_on_a_small_fake_device():
-    """Exercises the exact hardware code path (runtime Estimator + mitigation options) without IBM access."""
+    """Same code path as IBM hardware, on a fake device small enough to simulate."""
     from qiskit_ibm_runtime.fake_provider import FakeManilaV2
     cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
     res = embed(X[:4], cfg, "HW", precision=0.05, submit=True, device=FakeManilaV2(), seed=1)
