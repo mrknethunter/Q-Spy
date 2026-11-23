@@ -23,6 +23,7 @@ FEWSHOT_MODELS = [
 NOVELTY_MODELS = [
     "rbf_ocsvm",
     "isolation_forest",
+    "lof",
 ]
 
 @pytest.fixture
@@ -351,3 +352,45 @@ def test_isolation_forest_tunes_tree_and_contamination_params(novelty_loco_fixtu
         "bootstrap",
     }
     assert expected_keys.issubset(model.best_params_.keys())
+
+
+def test_novelty_cross_model_equal_budget(novelty_loco_fixture) -> None:
+    """Verify all 3 registered novelty baselines evaluate the exact same config count."""
+    X_train_known, _, _ = novelty_loco_fixture
+    budget = 6
+
+    evaluated_counts = [
+        build_baseline(name, budget=budget, seed=42)
+        .fit(X_train_known)
+        .get_budget_report()["n_configs_evaluated"]
+        for name in NOVELTY_MODELS
+    ]
+    assert all(count == budget for count in evaluated_counts)
+
+
+def test_lof_tunes_neighbors_metric_and_contamination(novelty_loco_fixture) -> None:
+    """Verify LOF (novelty=True) tunes neighborhood, metric, and contamination."""
+    X_train_known, _, _ = novelty_loco_fixture
+
+    model = build_baseline("lof", budget=12, seed=42, cv_folds=5)
+    model.fit(X_train_known)
+
+    assert {"n_neighbors", "metric", "contamination"}.issubset(model.best_params_.keys())
+
+
+def test_lof_clamps_neighbors_on_small_known_set() -> None:
+    """Verify LOF clamps n_neighbors cleanly when training fold size < n_neighbors."""
+    rng = np.random.default_rng(88)
+    X_train_small = rng.normal(loc=0.0, scale=0.5, size=(12, 7))
+    X_test_inlier = rng.normal(loc=0.0, scale=0.5, size=(5, 7))
+    X_test_outlier = rng.normal(loc=6.0, scale=0.5, size=(5, 7))
+    X_test = np.vstack([X_test_inlier, X_test_outlier])
+
+    model = build_baseline("lof", budget=20, seed=42, cv_folds=4)
+    model.fit(X_train_small)
+
+    preds = model.predict(X_test)
+    scores = model.score_samples(X_test)
+
+    assert preds.shape == (10,)
+    assert scores[5:].mean() > scores[:5].mean()

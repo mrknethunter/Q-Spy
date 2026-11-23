@@ -13,7 +13,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 
 from sklearn.svm import SVC, OneClassSVM
 from sklearn.metrics.pairwise import laplacian_kernel
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, LocalOutlierFactor
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, IsolationForest
 
@@ -481,7 +481,6 @@ class RBFOCSVMBaseline(BaseNoveltyBaseline):
 
 # Isolation Forest
 
-
 class IsolationForestBaseline(BaseNoveltyBaseline):
     """Isolation Forest novelty detector tuned strictly on known families."""
 
@@ -508,6 +507,60 @@ class IsolationForestBaseline(BaseNoveltyBaseline):
         )
 
 
+# Local Outlier Factor
+
+class _SafeLocalOutlierFactor(BaseEstimator):
+    """LocalOutlierFactor (novelty=True) wrapper clamping n_neighbors to fold size."""
+
+    def __init__(
+        self,
+        n_neighbors: int = 20,
+        metric: str = "euclidean",
+        contamination: float = 0.05,
+    ) -> None:
+        self.n_neighbors = n_neighbors
+        self.metric = metric
+        self.contamination = contamination
+
+    def fit(self, X: np.ndarray, y: Any = None) -> _SafeLocalOutlierFactor:
+        X_arr = np.asarray(X, dtype=np.float64)
+        effective_k = max(1, min(int(self.n_neighbors), len(X_arr) - 1))
+        self.lof_ = LocalOutlierFactor(
+            n_neighbors=effective_k,
+            metric=self.metric,
+            contamination=self.contamination,
+            novelty=True,
+        )
+        self.lof_.fit(X_arr)
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.lof_.predict(np.asarray(X, dtype=np.float64))
+
+    def decision_function(self, X: np.ndarray) -> np.ndarray:
+        return self.lof_.decision_function(np.asarray(X, dtype=np.float64))
+
+
+class LOFBaseline(BaseNoveltyBaseline):
+    """Local Outlier Factor novelty detector tuned strictly on known families."""
+
+    model_name = "lof"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        return {
+            "n_neighbors": [5, 10, 15, 20, 30],
+            "metric": ["euclidean", "manhattan", "chebyshev"],
+            "contamination": [0.01, 0.05, 0.1, 0.15],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return _SafeLocalOutlierFactor(
+            n_neighbors=params["n_neighbors"],
+            metric=params["metric"],
+            contamination=params["contamination"],
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     # Few-shot classifiers
     "rbf_svm": RBFSVMBaseline,
@@ -518,6 +571,7 @@ BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     # Novelty detectors
     "rbf_ocsvm": RBFOCSVMBaseline,
     "isolation_forest": IsolationForestBaseline,
+    "lof": LOFBaseline,
 }
 
 def build_baseline(
