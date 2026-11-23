@@ -221,3 +221,6 @@ __marimo__/
 
 # raw dataset files
 /data/raw
+
+# virtual environment
+.venv/
