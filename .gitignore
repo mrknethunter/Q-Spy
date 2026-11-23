@@ -219,6 +219,12 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# raw dataset files
+/data/raw
+
+# virtual environment
+.venv/
+
 # IBM Quantum credentials (L-03): never commit them
 qiskit-ibm.json
 .qiskit/
