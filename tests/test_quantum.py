@@ -80,3 +80,48 @@ def test_embed_l0_matches_independent_statevector(n, layers):
 def test_embed_rejects_unknown_tier():
     with pytest.raises(ValueError):
         embed(X, EmbedConfig(2, 1, 1.0), "L9")
+
+
+# --- Q-04 shot-noise (L1) and noisy-emulation (L2) tiers ----------------------------------------
+def test_embed_l1_adds_unbiased_shot_noise_of_requested_size():
+    cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
+    exact = embed(X, cfg, "L0").B
+    diff = embed(X, cfg, "L1", precision=0.05, seed=1).B - exact
+    assert 0.02 < diff.std() < 0.1 and abs(diff.mean()) < 0.03
+
+
+def test_embed_l2_compiles_for_fake_kingston_and_stays_close_to_exact():
+    cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
+    res = embed(X[:4], cfg, "L2", precision=0.05, seed=1)
+    assert res.B.shape == (4, 3, 3)
+    assert res.meta["backend_name"] == "fake_kingston" and len(res.meta["layout"]) == 3
+    assert isinstance(res.meta["two_qubit_depth"], int)
+    assert np.corrcoef(res.B.ravel(), embed(X[:4], cfg, "L0").B.ravel())[0, 1] > 0.8
+
+
+# --- Q-05 IBM hardware tier: dry run by default, usage estimate ------------------------------------
+def test_estimate_usage_matches_ibm_formula():
+    from quantum.embed import estimate_usage
+    # 120 points x 3 measurement settings x ceil(1/0.03^2)=1112 shots = 400 320 executions
+    assert estimate_usage(n_points=120, precision=0.03) == pytest.approx(1.3 * (2 + 0.35e-3 * 400_320))
+
+
+def test_embed_hw_is_a_dry_run_unless_submit(monkeypatch):
+    import qiskit_ibm_runtime
+
+    def no_network(*a, **k):
+        raise AssertionError("dry run must not contact IBM")
+    monkeypatch.setattr(qiskit_ibm_runtime, "QiskitRuntimeService", no_network)
+    res = embed(X, EmbedConfig(4, 2, 1.0), "HW", precision=0.03)
+    assert res.B is None and res.meta["dry_run"] is True
+    assert res.meta["estimated_qpu_s"] > 0
+
+
+def test_embed_hw_submit_path_runs_locally_on_a_small_fake_device():
+    """Exercises the exact hardware code path (runtime Estimator + mitigation options) without IBM access."""
+    from qiskit_ibm_runtime.fake_provider import FakeManilaV2
+    cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
+    res = embed(X[:4], cfg, "HW", precision=0.05, submit=True, device=FakeManilaV2(), seed=1)
+    assert res.B.shape == (4, 3, 3) and res.meta["dry_run"] is False
+    assert res.meta["job_ids"] and len(res.meta["layout"]) == 3
+    assert np.corrcoef(res.B.ravel(), embed(X[:4], cfg, "L0").B.ravel())[0, 1] > 0.7
