@@ -1,4 +1,3 @@
-"""Reusable check that a model follows the Models contract in docs/contracts.md (import it from M-0x tests)."""
 from __future__ import annotations
 
 import numpy as np

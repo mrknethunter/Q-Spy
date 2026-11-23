@@ -1,4 +1,3 @@
-"""Deterministic synthetic data satisfying docs/contracts.md, for developing without real data or other tasks."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,17 +13,16 @@ CURATED_COLUMNS = ("id", "gps", "ifo", "label", "confidence", *FEATURES, "run", 
 
 
 @dataclass(frozen=True)
-class Split:  # same fields as data.splits.Split (D-04)
+class Split:  # mirrors data.splits.Split without importing an unmerged module
     train_ids: tuple[str, ...]
     val_ids: tuple[str, ...]
     test_ids: tuple[str, ...]
 
 
 def synthetic_curated(n_per_class: int = 60, seed: int = 0) -> pd.DataFrame:
-    """Curated-table look-alike: 7 known classes + held-out class, separable log-normal features."""
     rng = np.random.default_rng(seed)
     classes = (*KNOWN_CLASSES, HELD_OUT)
-    centres = rng.uniform(0.5, 3.0, size=(len(classes), len(FEATURES)))  # log10 class centres
+    centres = rng.uniform(0.5, 3.0, size=(len(classes), len(FEATURES)))
     rows = []
     for c, label in enumerate(classes):
         runs = ("O3a", "O3b") if label == HELD_OUT else ("O1", "O2", "O3a", "O3b")
@@ -41,7 +39,6 @@ def synthetic_curated(n_per_class: int = 60, seed: int = 0) -> pd.DataFrame:
 
 
 def synthetic_features(df: pd.DataFrame) -> np.ndarray:
-    """X_tilde in [-1, 1], columns in contract order (log10, centre, scale, clip) — a stand-in for D-03."""
     logs = np.log10(df[list(FEATURES)].to_numpy(dtype=np.float64))
     med = np.median(logs, axis=0)
     iqr = np.subtract(*np.percentile(logs, [75, 25], axis=0))
@@ -49,7 +46,6 @@ def synthetic_features(df: pd.DataFrame) -> np.ndarray:
 
 
 def synthetic_split(df: pd.DataFrame, k: int = 5, n_val: int = 5, seed: int = 0) -> Split:
-    """P1-like split over known classes: k train and n_val val ids per class, the rest test."""
     rng = np.random.default_rng(seed)
     train, val, test = [], [], []
     for label in KNOWN_CLASSES:
@@ -59,7 +55,6 @@ def synthetic_split(df: pd.DataFrame, k: int = 5, n_val: int = 5, seed: int = 0)
 
 
 def synthetic_bloch(n_points: int, n_qubits: int, seed: int = 0) -> np.ndarray:
-    """Valid Bloch vectors, shape (n_points, n_qubits, 3), every norm <= 1."""
     rng = np.random.default_rng(seed)
     v = rng.normal(size=(n_points, n_qubits, 3))
     v /= np.linalg.norm(v, axis=-1, keepdims=True)

@@ -1,4 +1,3 @@
-"""L-02 contract tests. A test is skipped while its module is still a stub, and enforced once implemented."""
 from __future__ import annotations
 
 import numpy as np
@@ -9,7 +8,7 @@ from tests.fixtures.synthetic import (CURATED_COLUMNS, FEATURES, HELD_OUT, synth
                                       synthetic_features, synthetic_split)
 
 
-def _call(fn, *args, **kwargs):
+def _call(fn, *args, **kwargs):  # skip while the module is a stub, enforce once implemented
     try:
         return fn(*args, **kwargs)
     except NotImplementedError as exc:
@@ -21,7 +20,6 @@ def curated():
     return synthetic_curated()
 
 
-# --- fixtures honour the contract themselves --------------------------------------------------
 def test_fixtures_follow_contract(curated):
     assert tuple(curated.columns) == CURATED_COLUMNS and curated["id"].is_unique
     assert set(curated.loc[curated["label"] == HELD_OUT, "run"]) <= {"O3a", "O3b"}
@@ -32,7 +30,6 @@ def test_fixtures_follow_contract(curated):
     assert np.all(np.linalg.norm(synthetic_bloch(50, 6), axis=-1) <= 1.0 + 1e-12)
 
 
-# --- quantum embedding --------------------------------------------------------------------------
 @pytest.mark.parametrize("entangle", [True, False])
 def test_embed_l0(curated, entangle):
     from quantum.embed import EmbedConfig, embed
@@ -43,7 +40,6 @@ def test_embed_l0(curated, entangle):
     assert res.meta["tier"] == "L0" and res.meta["embed_config"]["n_qubits"] == 4
 
 
-# --- store ----------------------------------------------------------------------------------------
 def test_store_round_trip_and_hw_protection(tmp_path):
     from store.io import read_bloch, write_bloch
     ids, B = [f"syn-{i}" for i in range(7)], synthetic_bloch(7, 3)
@@ -55,7 +51,6 @@ def test_store_round_trip_and_hw_protection(tmp_path):
         write_bloch("run-a", ids, B, meta, root=tmp_path)
 
 
-# --- kernels ----------------------------------------------------------------------------------------
 def test_projected_kernel():
     from kernels.projected import projected_kernel
     B1, B2 = synthetic_bloch(9, 4, seed=1), synthetic_bloch(5, 4, seed=2)
@@ -73,7 +68,6 @@ def test_rbf_kernel(curated):
     assert np.allclose(_call(rbf_kernel, X[:10], X, 0.3), sk_rbf(X[:10], X, gamma=0.3))
 
 
-# --- models (activates when M-04 is merged) ---------------------------------------------------------
 def test_baseline_follows_model_contract(curated):
     baselines = pytest.importorskip("models.baselines")
     X, s = synthetic_features(curated), synthetic_split(curated)
