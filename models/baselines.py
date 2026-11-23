@@ -15,7 +15,7 @@ from sklearn.svm import SVC, OneClassSVM
 from sklearn.metrics.pairwise import laplacian_kernel
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, IsolationForest
 
 
 class BaseBudgetedModel(ABC):
@@ -479,6 +479,35 @@ class RBFOCSVMBaseline(BaseNoveltyBaseline):
         )
 
 
+# Isolation Forest
+
+
+class IsolationForestBaseline(BaseNoveltyBaseline):
+    """Isolation Forest novelty detector tuned strictly on known families."""
+
+    model_name = "isolation_forest"
+
+    def _param_grid(self) -> dict[str, list[Any]]:
+        # >>> MODIFICA QUI I PARAMETRI PER GIOCARE CON ISOLATION FOREST <<<
+        return {
+            "n_estimators": [100, 200, 300],
+            "max_samples": ["auto", 0.5, 0.75, 1.0],
+            "contamination": [0.01, 0.05, 0.1, 0.15],
+            "max_features": [0.5, 0.75, 1.0],
+            "bootstrap": [False, True],
+        }
+
+    def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
+        return IsolationForest(
+            n_estimators=params["n_estimators"],
+            max_samples=params["max_samples"],
+            contamination=params["contamination"],
+            max_features=params["max_features"],
+            bootstrap=params["bootstrap"],
+            random_state=self.seed,
+        )
+
+
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     # Few-shot classifiers
     "rbf_svm": RBFSVMBaseline,
@@ -488,6 +517,7 @@ BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
     "hist_gradient_boosting": HistGradientBoostingBaseline,
     # Novelty detectors
     "rbf_ocsvm": RBFOCSVMBaseline,
+    "isolation_forest": IsolationForestBaseline,
 }
 
 def build_baseline(

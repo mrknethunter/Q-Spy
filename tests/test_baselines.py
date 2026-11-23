@@ -22,6 +22,7 @@ FEWSHOT_MODELS = [
 
 NOVELTY_MODELS = [
     "rbf_ocsvm",
+    "isolation_forest",
 ]
 
 @pytest.fixture
@@ -334,3 +335,19 @@ def test_rbf_ocsvm_tunes_nu_and_gamma(novelty_loco_fixture) -> None:
 
     assert "nu" in model.best_params_
     assert "gamma" in model.best_params_
+
+def test_isolation_forest_tunes_tree_and_contamination_params(novelty_loco_fixture) -> None:
+    """Verify IsolationForest tunes ensemble and contamination hyperparameters."""
+    X_train_known, _, _ = novelty_loco_fixture
+
+    model = build_baseline("isolation_forest", budget=12, seed=42, cv_folds=5)
+    model.fit(X_train_known)
+
+    expected_keys = {
+        "n_estimators",
+        "max_samples",
+        "contamination",
+        "max_features",
+        "bootstrap",
+    }
+    assert expected_keys.issubset(model.best_params_.keys())
