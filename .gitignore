@@ -232,3 +232,7 @@ apikey.json
 
 # Local pilot dry runs (hardware runs, hw-*, are kept)
 results/pilot/dry-*
+
+# Bloch-vector store: hardware runs (hw-*) are committed, simulated runs are not
+store/runs/*
+!store/runs/hw-*/
