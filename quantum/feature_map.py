@@ -17,7 +17,7 @@ def feature_map(n_qubits: int, layers: int, d: int = 7, entangle: bool = True) -
         for q in range(n_qubits):
             qc.ry(x[q % d], q)
             qc.rz(x[q % d], q)
-        if entangle:
-            for q in range(n_qubits - 1):
+        if entangle:  # CZs commute: even pairs then odd pairs gives the same state in two moments
+            for q in [*range(0, n_qubits - 1, 2), *range(1, n_qubits - 1, 2)]:
                 qc.cz(q, q + 1)
     return qc

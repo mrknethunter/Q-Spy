@@ -48,6 +48,13 @@ def test_feature_map_gates(entangle, n_cz):
     assert qc.num_parameters == 4  # n < d: qubit q gets feature q
 
 
+@pytest.mark.parametrize("n", [2, 7, 8, 14])
+def test_feature_map_cz_chain_has_two_moments_per_layer(n):
+    from quantum.feature_map import feature_map
+    qc = feature_map(n_qubits=n, layers=3)
+    assert qc.depth(lambda inst: inst.operation.num_qubits == 2) <= 2 * 3
+
+
 def test_feature_map_reuploads_features_cyclically():
     from quantum.feature_map import feature_map
     qc = feature_map(n_qubits=9, layers=1, d=7)
