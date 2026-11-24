@@ -81,11 +81,11 @@ def run_campaign(frozen, subsets, features, submit=False, device=DEFAULT_DEVICE,
     return summary
 
 
-def gravityspy_features(frozen):
+def gravityspy_features(frozen, curated=None):
     from data.curate import load_curated
     from data.splits import load_split
     from features.transforms import make_features
-    df = load_curated().set_index("id", drop=False)
+    df = (load_curated() if curated is None else curated).set_index("id", drop=False)
     train = load_split(frozen["scaler_protocol"], frozen["scaler_seed"], held_out="Fast_Scattering").train_ids
     _, scaler = make_features(df.loc[list(train)])  # same scaling as the L0 experiments, fitted on training ids only
     return lambda ids: make_features(df.loc[list(ids)], scaler)[0]
