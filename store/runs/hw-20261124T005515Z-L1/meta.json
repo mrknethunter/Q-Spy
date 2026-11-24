@@ -1,0 +1,13 @@
+{
+  "tier": "L1",
+  "embed_config": {
+    "n_qubits": 8,
+    "layers": 2,
+    "s": 1.0,
+    "entangle": true
+  },
+  "n_points": 10,
+  "precision": 0.03,
+  "created_at": "2026-11-24T00:55:15.566539+00:00",
+  "git_commit": "9c6975a0f75fd61d135b37b8c60edfdba0b61506"
+}

@@ -1,0 +1,25 @@
+{
+  "tier": "L2",
+  "embed_config": {
+    "n_qubits": 8,
+    "layers": 2,
+    "s": 1.0,
+    "entangle": true
+  },
+  "n_points": 10,
+  "precision": 0.03,
+  "backend_name": "fake_kingston",
+  "layout": [
+    21,
+    22,
+    23,
+    16,
+    3,
+    2,
+    1,
+    0
+  ],
+  "two_qubit_depth": 4,
+  "created_at": "2026-11-24T00:55:15.779723+00:00",
+  "git_commit": "9c6975a0f75fd61d135b37b8c60edfdba0b61506"
+}
