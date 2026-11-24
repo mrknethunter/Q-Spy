@@ -14,8 +14,15 @@ SUBSETS = {"status": "bound_to_hw_freeze", "subsets": {
 FROZEN = {"n_qubits": 3, "layers": 1, "s": 1.0, "precision": 0.1, "concentration_qubits": [2, 3], "budget_s": 600}
 
 
+LABELS = dict(zip(df["id"], df["label"]))
+
+
 def features(batch_ids):
     return [X[i] for i in batch_ids]
+
+
+def labels(batch_ids):
+    return [LABELS[i] for i in batch_ids]
 
 
 def test_dry_run_plans_every_experiment_and_stores_emulations(tmp_path):
@@ -26,6 +33,12 @@ def test_dry_run_plans_every_experiment_and_stores_emulations(tmp_path):
     assert [e["mitigation"] for e in s["experiments"]][2] is False
     _, B, meta = read_bloch(f"{s['run_id']}-main-L2", root=tmp_path / "store")
     assert B.shape == (6, 3, 3) and meta["tier"] == "L2"
+
+
+def test_dry_run_predicts_hardware_degradation_per_experiment(tmp_path):
+    s = run_campaign(FROZEN, SUBSETS, features, labels=labels, out_dir=tmp_path, store_root=tmp_path / "store")
+    main = next(e for e in s["experiments"] if e["experiment"] == "main")
+    assert 0 < main["L2_vs_L0"]["rmse"] < 0.5 and set(main["kta"]) == {"L0", "L2"}
 
 
 def test_submission_is_refused_over_budget_before_any_job(tmp_path):

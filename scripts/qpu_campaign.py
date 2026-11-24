@@ -10,6 +10,8 @@ import numpy as np
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # allow `python scripts/qpu_campaign.py`
+from diagnostics.alignment import kernel_target_alignment  # noqa: E402
+from kernels.projected import projected_kernel  # noqa: E402
 from quantum.embed import DEFAULT_DEVICE, EmbedConfig, embed  # noqa: E402
 from store.io import write_bloch  # noqa: E402
 
@@ -32,7 +34,7 @@ def _compare(B, ref):
 
 
 def run_campaign(frozen, subsets, features, submit=False, device=DEFAULT_DEVICE, seed=7, out_dir="results/campaign",
-                 store_root=None):
+                 store_root=None, labels=None):
     precision = frozen["precision"]
     run_id = ("hw-" if submit else "dry-") + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     plan, data = [], {}
@@ -50,10 +52,14 @@ def run_campaign(frozen, subsets, features, submit=False, device=DEFAULT_DEVICE,
         raise RuntimeError(f"estimated {total:.0f} s exceeds the budget of {frozen['budget_s']} s: nothing submitted")
 
     tiers = {}
-    for name, (ids, X, cfg, _) in data.items():
-        tiers[name] = {"L0": embed(X, cfg, "L0"), "L2": embed(X, cfg, "L2", precision=precision, seed=seed)}
-        for tier, r in tiers[name].items():
-            write_bloch(f"{run_id}-{name}-{tier}", ids, r.B, r.meta, root=store_root)
+    for e in plan:
+        ids, X, cfg, _ = data[e["experiment"]]
+        t = tiers[e["experiment"]] = {"L0": embed(X, cfg, "L0"), "L2": embed(X, cfg, "L2", precision=precision, seed=seed)}
+        for tier, r in t.items():
+            write_bloch(f"{run_id}-{e['experiment']}-{tier}", ids, r.B, r.meta, root=store_root)
+        e["L2_vs_L0"] = _compare(t["L2"].B, t["L0"].B)  # Q-06: predicted hardware degradation (no mitigation)
+        if labels is not None and len(set(labels(ids))) > 1:
+            e["kta"] = {k: kernel_target_alignment(projected_kernel(r.B, r.B, 1.0), labels(ids)) for k, r in t.items()}
     summary = {"run_id": run_id, "frozen": frozen, "estimated_qpu_s": total, "experiments": plan}
 
     if submit:
