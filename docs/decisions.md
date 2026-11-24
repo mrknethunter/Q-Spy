@@ -11,7 +11,7 @@ needs a new tag (`hw-freeze-v2`) and a written reason here. Machine-readable val
 | Layers L | 2 | two-qubit depth 4 on ibm_kingston, no SWAPs; deeper circuits align worse (E-01) |
 | Bandwidth s | 0.1778 | maximum label alignment of the E-01 grid; s = 1 (pilot value) is 40% worse |
 | Entanglement | CZ chain, on | the product-state ablation (R2) is computed classically, no QPU needed |
-| Precision | 0.03 (1112 shots) | no alignment loss vs exact; 0.05 already loses 0.01 (Q-06) |
+| Precision | 0.03 (1112 shots) | no alignment loss vs exact; 0.05 is within noise of it, 0.10 is not (Q-06); 0.03 is the value validated by the pilot and fits the budget |
 | Mitigation | TREX + twirling + DD | pilot: hardware at the shot-noise floor; control subset runs without it |
 | Feature scaling | D-03 scaler fitted on P2 seed-0 training IDs | same scaling for E-01, the ML experiments and the hardware points; no test leakage |
 | Device | ibm_kingston | pilot backend; empty queue at the time of the pilot |
@@ -30,16 +30,19 @@ fidelity kernels.
 - Honest caveat: at n = 8 the fidelity kernel aligns slightly better than the projected one (0.556 vs 0.534). The
   projected kernel is chosen for hardware cost: 360 circuits for the 120 main points instead of 7140.
 
-**Q-06, emulation on the 120 main hardware points** (all outside training and validation):
+**Q-06, emulation on the 120 main hardware points** (all outside training and validation; reproducible with
+`python experiments/q06_noise_prediction.py`, results in `results/q06/q06_main.csv` and `.png`):
 
 | Configuration | KTA exact (L0) | shot noise (L1) | Kingston noise model (L2) |
 |---|---|---|---|
-| s = 0.1778, precision 0.03 | 0.531 | 0.529 | 0.531 |
-| s = 0.1778, precision 0.05 | 0.531 | 0.525 | 0.521 |
-| s = 1.0, precision 0.03 | 0.319 | 0.317 | 0.317 |
+| s = 0.1778, precision 0.03 | 0.531 | 0.532 | 0.530 |
+| s = 0.1778, precision 0.05 | 0.531 | 0.528 | 0.527 |
+| s = 0.1778, precision 0.10 | 0.531 | 0.517 | 0.512 |
+| s = 1.0, precision 0.03 | 0.319 | 0.317 | 0.319 |
 
-The Bloch vectors of different glitches differ by 0.23 on average, eight times the measurement noise, so the chosen
-configuration is robust to it; 0.531 on unseen points matches the 0.534 of the training sample.
+Different noise draws move these values by about ±0.005, so precision 0.05 is already within noise of 0.03 and only 0.10
+loses alignment for real. The Bloch vectors of different glitches differ by 0.23 on average, eight times the measurement
+noise; 0.531 on unseen points matches the 0.534 of the training sample.
 
 **H-01 pilot** (`docs/qpu_policy.md`): mitigated hardware error 0.033 vs 0.030 from shot noise alone; usage 13 s vs
 13.7 s predicted.
