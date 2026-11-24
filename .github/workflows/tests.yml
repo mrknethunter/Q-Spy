@@ -1,0 +1,24 @@
+name: tests
+
+# Manual only for now (lead decision, I-02): run it from the Actions tab with "Run workflow".
+# To run it automatically on every PR to main, add under `on:`
+#   pull_request:
+#     branches: [main]
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q

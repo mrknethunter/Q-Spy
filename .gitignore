@@ -218,3 +218,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# raw dataset files
+/data/raw
+
+# virtual environment
+.venv/
+
+# IBM Quantum credentials (L-03): never commit them
+qiskit-ibm.json
+.qiskit/
+apikey.json
+
+# Local pilot dry runs (hardware runs, hw-*, are kept)
+results/pilot/dry-*
+
+# Bloch-vector store: hardware runs (hw-*) are committed, simulated runs are not
+store/runs/*
+!store/runs/hw-*/
+
+# E-01 synthetic previews (real-data results are committed)
+results/e01/*synthetic*
+results/campaign/dry-*

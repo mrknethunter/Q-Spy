@@ -1,0 +1,10 @@
+# L-05 hardware configuration. Frozen by the git tag hw-freeze; rationale and evidence in docs/decisions.md.
+n_qubits: 8
+layers: 2
+s: 0.1778
+precision: 0.03
+concentration_qubits: [4, 8, 12]
+budget_s: 587
+device: ibm_kingston
+scaler_protocol: P2
+scaler_seed: 0
