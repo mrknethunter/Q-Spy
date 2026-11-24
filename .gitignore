@@ -236,3 +236,6 @@ results/pilot/dry-*
 # Bloch-vector store: hardware runs (hw-*) are committed, simulated runs are not
 store/runs/*
 !store/runs/hw-*/
+
+# E-01 synthetic previews (real-data results are committed)
+results/e01/*synthetic*

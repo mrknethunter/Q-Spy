@@ -10,7 +10,7 @@ X = synthetic_features(synthetic_curated())[:12]
 
 
 def numpy_reference_bloch(X, cfg):
-    """Independent dense-statevector implementation, so a Qiskit ordering or sign error cannot pass unnoticed."""
+    # independent dense-statevector implementation, so a Qiskit ordering or sign error cannot pass unnoticed
     n, d = cfg.n_qubits, X.shape[1]
     paulis = [np.array([[0, 1], [1, 0]], complex), np.array([[0, -1j], [1j, 0]]), np.diag([1, -1]).astype(complex)]
     idx = np.arange(2 ** n)
@@ -133,7 +133,7 @@ def test_embed_hw_is_a_dry_run_unless_submit(monkeypatch):
 
 
 def test_embed_hw_submit_path_runs_locally_on_a_small_fake_device():
-    """Same code path as IBM hardware, on a fake device small enough to simulate."""
+    # same code path as IBM hardware, on a fake device small enough to simulate
     from qiskit_ibm_runtime.fake_provider import FakeManilaV2
     cfg = EmbedConfig(n_qubits=3, layers=1, s=1.0)
     res = embed(X[:4], cfg, "HW", precision=0.05, submit=True, device=FakeManilaV2(), seed=1)

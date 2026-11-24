@@ -1,4 +1,4 @@
-"""List IBM backends without submitting jobs. Save credentials once with QiskitRuntimeService.save_account()."""
+# Lists IBM backends without submitting jobs. Save credentials once with QiskitRuntimeService.save_account().
 from qiskit_ibm_runtime import QiskitRuntimeService
 
 service = QiskitRuntimeService()
