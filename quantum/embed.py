@@ -40,7 +40,8 @@ def estimate_usage(n_circuits: int, shots: int, n_subjobs: int = 1) -> float:
 
 
 def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precision: float = 0.03,
-          seed: int | None = None, submit: bool = False, device=DEFAULT_DEVICE) -> EmbedResult:
+          seed: int | None = None, submit: bool = False, device=DEFAULT_DEVICE, mitigation: bool = True,
+          mode=None) -> EmbedResult:
     n = cfg.n_qubits
     qc, angles = circuit_and_angles(X_tilde, cfg)
     meta = {"tier": backend, "embed_config": asdict(cfg), "n_points": len(angles)}
@@ -78,13 +79,14 @@ def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precisi
         from qiskit_ibm_runtime import EstimatorV2, QiskitRuntimeService
         dev = QiskitRuntimeService().backend(device) if isinstance(device, str) else device
         isa = _compile(qc, dev, seed, meta)
-        est = EstimatorV2(mode=dev)
+        est = EstimatorV2(mode=mode or dev)  # mode: a runtime Batch, so a campaign's jobs run back to back
         o = est.options
         o.default_precision = precision
-        o.resilience.measure_mitigation = True
-        o.twirling.enable_gates = True
-        o.twirling.enable_measure = True
-        o.dynamical_decoupling.enable = True
+        o.resilience.measure_mitigation = mitigation
+        o.twirling.enable_gates = mitigation
+        o.twirling.enable_measure = mitigation
+        o.dynamical_decoupling.enable = mitigation
+        meta["mitigation"] = {"measure_mitigation": mitigation, "twirling": mitigation, "dynamical_decoupling": mitigation}
         if seed is not None and hasattr(o, "simulator"):
             o.simulator.seed_simulator = seed  # only fake devices take a simulator seed
         meta["calibration"] = _calibration(dev, meta["layout"])
