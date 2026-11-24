@@ -1,0 +1,146 @@
+{
+  "completed_cases": 80,
+  "data_kind": "gravityspy_d02",
+  "dataset_sha256": "c8bb3d84efa5b583ee41d671ae195b73bb5cdf901e3af03e351e1e3eac0260f1",
+  "execution": "independent_family_processes",
+  "experiment": "E-03",
+  "files": {
+    "audit.json": "0a71fcdd25c23e421a396e5a20deadec0c1f45e2bb838bd7940a29c9c066037a",
+    "e03_metrics.csv": "e156735bdb0b7b0325ee5afc3b2e40bb1196d68f9ab7270152ec9415c21cbc86",
+    "e03_paired_differences.csv": "1fa9f629c19ccd356930cb5e21417a893555eb7891dec6fb58b139ee1f8792ce",
+    "e03_summary.csv": "0dfbd4bc27ae65b30c9b7e308e7113a7e082b386cb9665965e10e9f1c9c34d5c",
+    "family_errors.csv": "56a2053e0c4929b038e136fdd131b9add606e1570ab5d0e3a666fdc0cd625361",
+    "neighbors_fast_misses.csv": "d09d2af522efd407a6d8528d9db25a1b90e8ae69349a5470e6a7422964ec29e3",
+    "predictions/Blip.csv.gz": "873f8298ce55431add26b76418f13ab07d4f622e38d20fdff13b9411f006f934",
+    "predictions/Extremely_Loud.csv.gz": "627f161018a37ad1785e78836ec5024d42aeb458e59078b4d9ed9128f6eeb3d9",
+    "predictions/Fast_Scattering.csv.gz": "72dc6df95e1f66c9dd9720074d882eadd985e2f073b7fe618a7058ee64531f93",
+    "predictions/Koi_Fish.csv.gz": "1764be0ca291f020f448fc6ea38a986760661f13ae307697642b4919db77e89a",
+    "predictions/Low_Frequency_Burst.csv.gz": "72abfa698d887746468e40b68a5483fad39030823e9e39009d8817c8370dfae9",
+    "predictions/Low_Frequency_Lines.csv.gz": "77de0e7fb09f39472239cf9f64d9a674ea70199249fe77850ffbbcb624495346",
+    "predictions/Scattered_Light.csv.gz": "14c9f409a3cb389237fecc0d3a741ba35958a150386d91eb2df5c582225cd242",
+    "predictions/Tomte.csv.gz": "1c39f98073e1361043886aef261f489e0009b34156645a4f0692d1c0dbe5dccd",
+    "roc_curves.csv.gz": "ce9450e5d3003bf4c8fe547cdf9ca28795525cedd79881a1bed426323417942e",
+    "roc_fast_scattering.png": "955aa0ec351acd84b01b0d926f189a3eee796b481de74d67f95e040678047fa2",
+    "roc_rotations.png": "135fe5963f499e30d1c6e8b69afddbe0541f1567155886d7afd879afe57e6cf4",
+    "selected_ids.json.gz": "f272ac8210f0bfb4c6fd83ec2d401b4c023b0386518c2d11e1e2af55443757c4"
+  },
+  "finished_at": "2026-11-24T23:00:41.549951+00:00",
+  "input_rows": 318801,
+  "metric_rows": 3200,
+  "protocol": "P2",
+  "python": "3.12.14",
+  "rotations": [
+    {
+      "cases": 10,
+      "family": "Fast_Scattering",
+      "runtime_seconds": 986.14328581
+    },
+    {
+      "cases": 10,
+      "family": "Blip",
+      "runtime_seconds": 871.9653153649999
+    },
+    {
+      "cases": 10,
+      "family": "Extremely_Loud",
+      "runtime_seconds": 867.391128928
+    },
+    {
+      "cases": 10,
+      "family": "Koi_Fish",
+      "runtime_seconds": 871.1594290789999
+    },
+    {
+      "cases": 10,
+      "family": "Low_Frequency_Burst",
+      "runtime_seconds": 858.712212831
+    },
+    {
+      "cases": 10,
+      "family": "Low_Frequency_Lines",
+      "runtime_seconds": 863.8114673999999
+    },
+    {
+      "cases": 10,
+      "family": "Scattered_Light",
+      "runtime_seconds": 861.676383018
+    },
+    {
+      "cases": 10,
+      "family": "Tomte",
+      "runtime_seconds": 869.4919163289999
+    }
+  ],
+  "runtime_seconds": 999.7421702690001,
+  "settings": {
+    "bootstrap": 5000,
+    "bootstrap_seed": 29,
+    "budget": 60,
+    "budget_policy": "ceiling_60_OCSVM54_IF60_LOF15_see_docs_E03_review",
+    "cv_folds": 3,
+    "embed_batch_size": 512,
+    "embed_config": {
+      "entangle": true,
+      "layers": 2,
+      "n_qubits": 8,
+      "s": 0.1778
+    },
+    "held_outs": [
+      "Fast_Scattering",
+      "Blip",
+      "Extremely_Loud",
+      "Koi_Fish",
+      "Low_Frequency_Burst",
+      "Low_Frequency_Lines",
+      "Scattered_Light",
+      "Tomte"
+    ],
+    "max_test": 8192,
+    "max_train": 2048,
+    "max_val": 2048,
+    "sampling": "proportional_label_detector_min_one_SHA256",
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "target_known_fpr": 0.05,
+    "test_seed": 2026,
+    "tuning": "nested_known_family_loco_auroc",
+    "workers": 8
+  },
+  "source_sha256": {
+    "data/curate.py": "7231817a6c70a182e8a5070a55579ee6f511ecedd9dfa65d99bdde1c1c3cebaa",
+    "data/manifest.json": "e24fc84538d2957c889762448300ab9f9ec1261cb11c64e8eca32008536bab6c",
+    "data/splits.py": "6851d0f52c87914d1421b7df93401fa7aee8755f40a7094dde866888927d5a55",
+    "experiments/e03_novelty.py": "e15a9c15c7b5f2ef37c20e221b7b7f683fec8befa5697940511c9f9c63e1fa5e",
+    "experiments/e03_parallel.py": "60b84d78fb7d00229bee6453cb19e9adf70f72d86e967d7ab3e1ec617379db1e",
+    "features/transforms.py": "222aca08c6f77157b84bf323b19fb9d3053ba1fee1b5f25da8beb2ef4e1560a8",
+    "kernels/projected.py": "b5b59747fb779aba26cab5983db9a3ed4edd5f8ec862ddfc9e492b83cf4a44f1",
+    "models/baselines.py": "cf6e7940128936c3664002ddb5b47723d9557149007c7637b82532857eadc5ff",
+    "quantum/embed.py": "0bd625260d3c3aa7cc04094f63c72eb9e8d8af7d58c37799251dca4ace2855bd",
+    "quantum/feature_map.py": "cf02d83b96e2b1871af70f5ee0619747e347e531b73d307d4fe6d9ad98e9a53a",
+    "quantum/observables.py": "66f265444cda99f559977e328484e24856c31b78090b1c1e8f0f15b9019d83a7",
+    "requirements.txt": "d1c91bff8eaaa0a060984936cd211db6c5c611416491769f23c155ea28cfc448"
+  },
+  "split_manifest_sha256": "d057008a7a8accefad2b12ef7ee5417c5447979d889ba1d28f2e102e6866163e",
+  "started_at": "2026-11-24T22:44:01.807817+00:00",
+  "status": "complete",
+  "tier": "L0",
+  "versions": {
+    "matplotlib": "3.10.9",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "qiskit": "2.6.2",
+    "qiskit-aer": "0.17.2",
+    "scikit-learn": "1.7.2"
+  },
+  "worker_seconds_sum": 7050.351138759999
+}
