@@ -7,12 +7,12 @@ from typing import Any
 
 import numpy as np
 from sklearn.base import BaseEstimator, clone
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import KFold, ParameterGrid, StratifiedKFold
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from sklearn.svm import SVC, OneClassSVM
-from sklearn.metrics.pairwise import laplacian_kernel
+from sklearn.metrics.pairwise import laplacian_kernel, euclidean_distances
 from sklearn.neighbors import KNeighborsClassifier, LocalOutlierFactor
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, IsolationForest
@@ -97,7 +97,7 @@ class BaseBudgetedModel(ABC):
             "n_configs_evaluated": self.n_configs_evaluated_,
             "seed": self.seed,
             "best_params": dict(self.best_params_),
-            "best_cv_score": float(self.best_cv_score_),
+            "best_cv_score": float(self.best_cv_score_) if np.isfinite(self.best_cv_score_) else None,
         }
 
 
@@ -373,89 +373,205 @@ class HistGradientBoostingBaseline(BaseFewShotBaseline):
 #-----------------------------------------------------------------------------------------------
 
 
-class BaseNoveltyBaseline(BaseBudgetedModel, ABC):
-    """Base class for all 3 classical novelty detectors (Protocol 2).
+def novelty_loco_splits(y, seed=42):
+    """Indices for surrogate-family LOCO and independent known calibration.
 
-    Conventions:
-    - `fit(X, y=None)` expects `X` to contain ONLY known glitch families (no outliers).
-    - `predict(X)` returns `0` for known (inlier) and `1` for novel/anomalous (outlier).
-    - `score_samples(X)` returns continuous anomaly scores where higher = more anomalous.
+    The true unknown family is never permitted here. Splits use labels/seed,
+    never feature values or test outcomes. No preprocessing is fitted here.
     """
+    labels = np.asarray(y)
+    if labels.ndim != 1 or "Fast_Scattering" in set(map(str, labels)):
+        raise ValueError("novelty tuning requires known families only; Fast_Scattering is forbidden")
+    families = np.unique(labels)
+    if len(families) < 2:
+        raise ValueError("LOCO requires at least two known families")
+    rng = np.random.default_rng(seed)
+    splits = []
+    for family in families:
+        fit, calibration = [], []
+        for known in families[families != family]:
+            indices = rng.permutation(np.flatnonzero(labels == known))
+            if len(indices) < 2:
+                raise ValueError("LOCO requires at least two rows per known family")
+            n_cal = max(1, int(np.ceil(.2 * len(indices))))
+            calibration.extend(indices[:n_cal])
+            fit.extend(indices[n_cal:])
+        splits.append((str(family), np.asarray(fit), np.asarray(calibration),
+                       np.flatnonzero(labels == family)))
+    return splits
 
+
+def training_distance_median(X):
+    """Median of strictly upper-triangular squared training distances."""
+    distances = euclidean_distances(X, squared=True)
+    median = float(np.median(distances[np.triu_indices(len(X), 1)]))
+    if not np.isfinite(median) or median <= 0:
+        raise ValueError("positive training-distance median required for the gamma grid")
+    return median
+
+
+class BaseNoveltyBaseline(BaseBudgetedModel, ABC):
+    """Shared known-family LOCO tuning. Larger scores mean more anomalous.
+
+    Pass family labels for supervised *surrogate* tuning, never true anomalies.
+    validation=(X_known, y_known) calibrates the final operating point. The
+    optional inner_representations contain independently preprocessed inner
+    fit/calibration/surrogate arrays, keyed by family, in the splitter order.
+    Feature-only fit remains an explicitly untuned compatibility heuristic.
+    """
     task = "novelty"
+    target_fpr = .05
 
-    def _resolve_novelty_n_splits(self, n_samples: int) -> int:
-        if n_samples < 2:
-            raise ValueError(f"Need at least 2 samples for inner CV, got {n_samples}.")
-        return min(self.cv_folds, n_samples)
+    def _score_known_validation_fold(self, estimator, X_val, X_surrogate):
+        scores = -estimator.decision_function(np.concatenate([X_val, X_surrogate]))
+        labels = np.r_[np.zeros(len(X_val)), np.ones(len(X_surrogate))]
+        return float(roc_auc_score(labels, scores))
 
-    def _score_known_validation_fold(
-        self,
-        estimator: BaseEstimator,
-        X_val: np.ndarray,
-        params: dict[str, Any],
-    ) -> float:
-        """Evaluate hyperparameter calibration on a known-only validation fold."""
-        raw_preds = estimator.predict(X_val)  # sklearn: +1 inlier, -1 outlier
-        anomaly_scores = -estimator.decision_function(X_val)
+    def _calibrate_nu(self, X_fit, X_known, gamma, nu_grid):
+        records, estimators = [], []
+        for nu in nu_grid:
+            estimator = self._build_estimator(dict(gamma=float(gamma), nu=float(nu)))
+            estimator.fit(X_fit)
+            fpr = float(np.mean(estimator.predict(X_known) == -1))
+            records.append(dict(nu=float(nu), native_known_fpr=fpr))
+            estimators.append(estimator)
+        # A deterministic tie favours smaller nu; anomaly labels never enter.
+        chosen = min(range(len(records)), key=lambda i: (
+            abs(records[i]["native_known_fpr"] - self.target_fpr), records[i]["nu"]))
+        return estimators[chosen], records[chosen], records
 
-        # Reject collapsed/constant kernels that cannot rank anomalies
-        if float(np.std(anomaly_scores)) < 1e-12:
-            return -1.0
-
-        val_fpr = float(np.mean(raw_preds == -1))
-        target_fpr = float(params.get("nu", params.get("contamination", 0.05)))
-        excess_fpr_penalty = 0.5 * max(0.0, val_fpr - 0.25)
-        return float(1.0 - abs(val_fpr - target_fpr) - excess_fpr_penalty)
-
-    def fit(self, X: np.ndarray, y: np.ndarray | None = None) -> BaseNoveltyBaseline:
-        X_arr = np.asarray(X, dtype=np.float64)
-        configs = self._sample_configurations()
-        n_splits = self._resolve_novelty_n_splits(len(X_arr))
-
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
-        splits = list(kf.split(X_arr))
-
-        best_score = -np.inf
-        best_params: dict[str, Any] = {}
+    def fit(self, X, y=None, *, validation=None, inner_representations=None):
+        X = np.asarray(X, dtype=np.float64)
+        if len(X) < 2 or X.ndim != 2 or not np.isfinite(X).all():
+            raise ValueError("finite two-dimensional training data with at least two rows required")
         self.cv_results_ = []
-
-        for params in configs:
-            fold_scores: list[float] = []
-            for train_idx, val_idx in splits:
-                est = self._build_estimator(params)
-                est.fit(X_arr[train_idx])
-                fold_scores.append(
-                    self._score_known_validation_fold(est, X_arr[val_idx], params)
-                )
-
-            mean_score = float(np.mean(fold_scores))
-            self.cv_results_.append({"params": params, "mean_calibration_score": mean_score})
-
-            if mean_score > best_score:
-                best_score = mean_score
-                best_params = params
-
-        self.n_configs_evaluated_ = len(configs)
-        self.best_params_ = dict(best_params)
-        self.best_cv_score_ = best_score
-
-        final_estimator = self._build_estimator(self.best_params_)
-        final_estimator.fit(X_arr)
-        self.best_estimator_ = final_estimator
+        if y is None:
+            # Without family labels there is no honest surrogate CV objective.
+            params = next(iter(ParameterGrid(self._param_grid())))
+            if self.model_name == "rbf_ocsvm":
+                params = dict(gamma=1 / training_distance_median(X), nu=.05)
+            elif self.model_name == "isolation_forest":
+                params = dict(n_estimators=100, max_samples="auto", contamination=.05,
+                              max_features=1., bootstrap=False)
+            else:
+                params = dict(n_neighbors=20, metric="euclidean", contamination=.05)
+            self.best_params_, self.best_cv_score_ = params, -np.inf
+            self.best_estimator_ = self._build_estimator(params).fit(X)
+            self.n_configs_evaluated_ = 1
+            self.tuning_mode_ = "unlabelled_fixed_heuristic_no_loco"
+            self.selection_audit_ = dict(mode=self.tuning_mode_, target_known_fpr=self.target_fpr)
+            self.operating_threshold_ = 0.
+            return self
+        y = np.asarray(y)
+        if len(y) != len(X):
+            raise ValueError("family labels and training rows differ")
+        splits = novelty_loco_splits(y, self.seed)
+        inner_X = X
+        if validation is not None:
+            known_X, known_y = validation
+            known_X, known_y = np.asarray(known_X), np.asarray(known_y)
+            if len(known_X) != len(known_y) or not len(known_X) or not set(known_y) <= set(y):
+                raise ValueError("validation must contain known training families only")
+        else:
+            # Compatibility path: final calibration holds out known rows and
+            # does NOT refit on them. Production E03 supplies external validation.
+            _, fit_idx, cal_idx, _ = splits[0]
+            # Include the first family among final fit rows, never calibration.
+            fit_idx = np.r_[fit_idx, splits[0][3]]
+            known_X, X = X[cal_idx], X[fit_idx]
+        prepared = []
+        for family, fit_idx, cal_idx, pseudo_idx in splits:
+            arrays = ((np.asarray(inner_representations[family][0]),
+                       np.asarray(inner_representations[family][1]),
+                       np.asarray(inner_representations[family][2]))
+                      if inner_representations is not None else
+                      (inner_X[fit_idx], inner_X[cal_idx], inner_X[pseudo_idx]))
+            if tuple(map(len, arrays)) != (len(fit_idx), len(cal_idx), len(pseudo_idx)):
+                raise ValueError("inner representation sizes do not match the shared LOCO split")
+            prepared.append((family, *arrays))
+        self.tuning_mode_ = "nested_known_family_loco_auroc"
+        if self.model_name == "rbf_ocsvm":
+            nu_grid = np.array([.001, .005, .01, .05, .1, .2])
+            c_grid = np.logspace(-2, 2, 9)
+            if self.budget < 54:
+                # Small synthetic smoke tests / explicitly exploratory budgets.
+                nu_grid = np.array([.05])
+                c_grid = c_grid[np.unique(np.linspace(0, 8, min(9, self.budget), dtype=int))]
+            medians = [training_distance_median(fit) for _, fit, _, _ in prepared]
+            for c in c_grid:
+                folds = []
+                for (family, fit, known, surrogate), median in zip(prepared, medians):
+                    estimator, chosen, calibration = self._calibrate_nu(fit, known, c / median, nu_grid)
+                    folds.append(dict(surrogate_family=family, gamma=float(c / median),
+                                      training_distance_median=median,
+                                      surrogate_auroc=self._score_known_validation_fold(estimator, known, surrogate),
+                                      **chosen, nu_calibration=calibration))
+                self.cv_results_.append(dict(params=dict(c=float(c)),
+                    mean_surrogate_auroc=float(np.mean([f["surrogate_auroc"] for f in folds])), folds=folds))
+            best = max(self.cv_results_, key=lambda r: (r["mean_surrogate_auroc"], -r["params"]["c"]))
+            median = training_distance_median(X)
+            gamma = best["params"]["c"] / median
+            estimator, chosen, final_calibration = self._calibrate_nu(X, known_X, gamma, nu_grid)
+            params = dict(gamma=gamma, nu=chosen["nu"])
+            self.n_configs_evaluated_ = len(c_grid) * len(nu_grid)
+            extra = dict(c=best["params"]["c"], training_distance_median=median,
+                         c_grid=c_grid.tolist(), nu_grid=nu_grid.tolist(),
+                         final_nu_calibration=final_calibration,
+                         final_native_known_fpr=chosen["native_known_fpr"],
+                         preregistered_gamma_grid_complete=bool(len(c_grid) == 9 and len(nu_grid) == 6))
+        else:
+            configs = self._sample_configurations()
+            forest_group, forest_folds = None, {}
+            for params in configs:
+                if self.model_name == "isolation_forest":
+                    group = tuple((key, value) for key, value in params.items() if key != "n_estimators")
+                    if group != forest_group:
+                        forest_group, forest_folds = group, {}
+                folds = []
+                for family, fit, known, surrogate in prepared:
+                    if self.model_name == "isolation_forest":
+                        # ParameterGrid order groups identical forest settings.
+                        # Warm-start extends the same seeded tree sequence exactly;
+                        # discard the cache between groups to bound memory.
+                        estimator = forest_folds.get(family)
+                        if estimator is None or estimator.n_estimators >= params["n_estimators"]:
+                            estimator = self._build_estimator(params).set_params(warm_start=True)
+                        else:
+                            estimator.set_params(n_estimators=params["n_estimators"])
+                        estimator.fit(fit)
+                        forest_folds[family] = estimator
+                    else:
+                        estimator = self._build_estimator(params).fit(fit)
+                    folds.append(dict(surrogate_family=family,
+                        surrogate_auroc=self._score_known_validation_fold(estimator, known, surrogate)))
+                self.cv_results_.append(dict(params=params,
+                    mean_surrogate_auroc=float(np.mean([f["surrogate_auroc"] for f in folds])), folds=folds))
+            best = max(self.cv_results_, key=lambda r: r["mean_surrogate_auroc"])
+            params = best["params"]
+            estimator = self._build_estimator(params).fit(X)
+            self.n_configs_evaluated_ = len(configs)
+            extra = {}
+        ranked = sorted((row["mean_surrogate_auroc"] for row in self.cv_results_), reverse=True)
+        extra["best_minus_runner_up_auroc"] = float(ranked[0] - ranked[1]) if len(ranked) > 1 else None
+        extra["candidates_within_0_01_of_best"] = sum(ranked[0] - value < .01 for value in ranked)
+        self.best_params_ = dict(params)
+        self.best_cv_score_ = best["mean_surrogate_auroc"]
+        self.best_estimator_ = estimator
+        known_scores = self.score_samples(known_X)
+        self.operating_threshold_ = float(np.quantile(known_scores, .95, method="higher"))
+        self.selection_audit_ = dict(mode=self.tuning_mode_, target_known_fpr=.05,
+            calibrated_known_fpr=float(np.mean(known_scores > self.operating_threshold_)),
+            operating_threshold=self.operating_threshold_, surrogate_families=[s[0] for s in splits],
+            configuration_budget_is_ceiling=True, **extra)
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.best_estimator_ is None:
-            raise RuntimeError("Model must be fitted before calling predict().")
-        raw_preds = self.best_estimator_.predict(np.asarray(X, dtype=np.float64))
-        return (raw_preds == -1).astype(int)
+    def predict(self, X):
+        return (self.score_samples(X) > self.operating_threshold_).astype(int)
 
-    def score_samples(self, X: np.ndarray) -> np.ndarray:
+    def score_samples(self, X):
         if self.best_estimator_ is None:
             raise RuntimeError("Model must be fitted before calling score_samples().")
-        X_arr = np.asarray(X, dtype=np.float64)
-        return -np.asarray(self.best_estimator_.decision_function(X_arr), dtype=np.float64)
+        return -np.asarray(self.best_estimator_.decision_function(np.asarray(X, dtype=np.float64)), dtype=np.float64)
 
 
 # RBF One-Class SVM
@@ -491,7 +607,7 @@ class IsolationForestBaseline(BaseNoveltyBaseline):
         return {
             "n_estimators": [100, 200, 300],
             "max_samples": ["auto", 0.5, 0.75, 1.0],
-            "contamination": [0.01, 0.05, 0.1, 0.15],
+            "contamination": [0.05],
             "max_features": [0.5, 0.75, 1.0],
             "bootstrap": [False, True],
         }
@@ -550,7 +666,7 @@ class LOFBaseline(BaseNoveltyBaseline):
         return {
             "n_neighbors": [5, 10, 15, 20, 30],
             "metric": ["euclidean", "manhattan", "chebyshev"],
-            "contamination": [0.01, 0.05, 0.1, 0.15],
+            "contamination": [0.05],
         }
 
     def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:

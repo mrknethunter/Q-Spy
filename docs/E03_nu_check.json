@@ -1,0 +1,117 @@
+{
+  "case": {
+    "held_out": "Fast_Scattering",
+    "model": "rbf_ocsvm",
+    "seed": 0
+  },
+  "gamma": 7.923911081557323,
+  "minimum_observed_fpr": 0.32177734375,
+  "no_production_parameters_or_results_changed": true,
+  "no_test_rows_used": true,
+  "records": [
+    {
+      "native_known_fpr": 0.99609375,
+      "nu": 1e-05,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.88525390625,
+      "nu": 0.0001,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.3388671875,
+      "nu": 0.001,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.32275390625,
+      "nu": 0.005,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.3291015625,
+      "nu": 0.01,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.32177734375,
+      "nu": 0.05,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.3271484375,
+      "nu": 0.1,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.33740234375,
+      "nu": 0.2,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.5478515625,
+      "nu": 0.5,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.89599609375,
+      "nu": 0.9,
+      "tol": 0.001
+    },
+    {
+      "native_known_fpr": 0.32421875,
+      "nu": 1e-05,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.322265625,
+      "nu": 0.0001,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.32763671875,
+      "nu": 0.001,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.3271484375,
+      "nu": 0.005,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.32568359375,
+      "nu": 0.01,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.32373046875,
+      "nu": 0.05,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.3271484375,
+      "nu": 0.1,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.33642578125,
+      "nu": 0.2,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.54736328125,
+      "nu": 0.5,
+      "tol": 1e-06
+    },
+    {
+      "native_known_fpr": 0.89599609375,
+      "nu": 0.9,
+      "tol": 1e-06
+    }
+  ],
+  "scope": "post_review_known_validation_only_diagnostic",
+  "script_sha256": "1f6cf391d85a64b250e251f3dc7420fc2745edf24cf72f137dd2b0bc5663e6d8",
+  "train_id_sha256": "2ea0e74b615e2712a8148fd8753f6abef54d4095448b26652370d4f2683ab945",
+  "validation_id_sha256": "ee151a596035cee7515d6992369e436f3cb78cdcf79d32543c6303391a9db1ae"
+}

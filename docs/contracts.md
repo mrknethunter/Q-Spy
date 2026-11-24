@@ -96,6 +96,18 @@ Because the projected kernel is an RBF kernel on flattened Bloch vectors, the sa
 makes the comparison fair by construction. Novelty scores use the opposite sign of scikit-learn's `score_samples`:
 negate it when wrapping a scikit-learn detector. `tests/contracts/model_contract.py` checks all of this.
 
+Novelty tuning after the E-03 review: provide actual known-family labels to
+`fit(Z_train, family_labels, validation=(Z_known_val, known_family_labels),
+inner_representations=...)` for nested known-family LOCO. The optional inner
+representations are keyed by surrogate family and ordered as inner fit,
+known calibration, surrogate rows, using `novelty_loco_splits`. Fit every inner
+preprocessor on its fit rows only. `fit(Z_train)` remains compatible but is an
+explicitly untuned fixed heuristic with null `best_cv_score`; it must not be
+reported as cross-validated. See `docs/E03_review.md` for the complete gamma/nu
+procedure, target FPR, budget counts and deviations. `score_samples` retains
+its higher-is-more-anomalous convention; `predict` uses the known-validation
+5% calibrated threshold in the labelled path.
+
 Representation names used in results: `R0` linear on `X_tilde`, `R1` RBF/Laplacian on `X_tilde`,
 `R2` projected without entanglement, `R3` projected with entanglement, `R4` linear on Bloch vectors, `R5` fidelity kernel.
 

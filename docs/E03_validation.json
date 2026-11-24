@@ -1,0 +1,60 @@
+{
+  "all_producer_source_hashes_checked": true,
+  "all_result_hashes_checked": true,
+  "base_archive": {
+    "filename": "Q-Spy-main(1).zip",
+    "sha256": "4034f5555c3a142112a169edc0fd24f371f8cf5fc6335f626b50dc70856c0c02"
+  },
+  "budget_ceiling_checked": true,
+  "completed_at": "2026-11-24T23:05:04.767128+00:00",
+  "curated_csv_sha256": "e5297d26ba674eafbbd5c41e6aa0eb6550759ee483f1705c2622c05786d1499a",
+  "fixed_test_across_seeds_checked": true,
+  "full_frozen_cases_checked": 80,
+  "full_partition_class_exclusion_checked": true,
+  "h3_formally_confirmed": false,
+  "inner_surrogate_free_scalers_refitted": true,
+  "m03_followup_issue_created": false,
+  "manifest_sha256": "e086556d4580291c31cd43292870c733a8940d62165a1dfd63e2a336d6e16eae",
+  "metric_values_recalculated": 3200,
+  "models_per_case": 4,
+  "nu_feasibility_diagnostic": {
+    "file": "docs/E03_nu_check.json",
+    "no_production_results_changed": true,
+    "no_test_rows_used": true,
+    "sha256": "52aafb2c451a547aab0e07dd1f7d4cd094be2fb84fc945e76561e6a6f4249645"
+  },
+  "other_shared_base_files_preserved": 114,
+  "paired_bootstrap_recalculated": true,
+  "preregistration_decisions_preserved": true,
+  "preregistration_deviations": [
+    "configuration ceiling 60, actual OCSVM54/IF60/LOF15",
+    "nu-only native FPR target not achieved; separate known-validation score threshold gives empirical 5% FPR"
+  ],
+  "previous_delivery_sha256": "034d8b597afccefbd60033d10e48d3bae488dbbe3dbff4077a24b2a5b2e8196f",
+  "runner_config_matches_delivered_yaml": true,
+  "runner_receipt_sha256": "6f2e981ba0212d237498cd183d2c72ff7702b6669f5bc0f78878e2db4cdcac5b",
+  "runner_result_matches_metric_file": true,
+  "scalers_refitted_from_selected_training": true,
+  "selected_ids_and_labels_checked": true,
+  "shared_base_changed_files": [
+    "models/baselines.py",
+    "tests/test_baselines.py",
+    "docs/contracts.md"
+  ],
+  "shared_source_snapshot": "provided main archive plus previously delivered E03 files; remote head unavailable (private repository 404)",
+  "status": "pass",
+  "tests": {
+    "command_data": "python -m pytest data/tests -q -W error::FutureWarning",
+    "command_project": "python -m pytest tests -q -W error::FutureWarning",
+    "data_test_count": 16,
+    "final_integration_rerun_tests": 14,
+    "future_warnings_are_errors": true,
+    "log_file": "docs/E03_tests.log",
+    "log_sha256": "05d0fc2d80c8a27215edbdb5a984824d6c69bc1fcb130ec19879ec38f7a5fd2c",
+    "project_test_count": 242,
+    "status": "pass",
+    "subtests": 190,
+    "total_tests": 258
+  },
+  "verifier_sha256": "a4d61b9e36e2a3f3c9037a28865944471c5532c1b0e9c4b762e284f9f10d2e30"
+}

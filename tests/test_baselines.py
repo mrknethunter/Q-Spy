@@ -57,7 +57,7 @@ def novelty_loco_fixture() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     n_known_classes = 6
     n_features = 7
 
-    # Known families (inliers) used for training (no labels required)
+    # Known-family centers and labels used for surrogate LOCO tuning
     X_train_known = np.vstack(
         [rng.normal(loc=c * 1.0, scale=0.6, size=(25, n_features)) for c in range(n_known_classes)]
     )
@@ -269,7 +269,7 @@ def test_novelty_fit_predict_and_metrics(model_name: str, novelty_loco_fixture) 
     X_train_known, X_test, y_test = novelty_loco_fixture
 
     model = build_baseline(model_name, budget=10, seed=42, cv_folds=5)
-    model.fit(X_train_known)  # Unlabelled known families only
+    model.fit(X_train_known, np.repeat(np.arange(6), 25))  # Family labels identify known surrogate folds only
 
     y_pred = model.predict(X_test)
     anomaly_scores = model.score_samples(X_test)
@@ -283,7 +283,7 @@ def test_novelty_fit_predict_and_metrics(model_name: str, novelty_loco_fixture) 
     print(f"\n--- [NOVELTY: {model_name.upper()}] ---")
     print(f"Budget valutato : {report['n_configs_evaluated']}/{report['budget_limit']}")
     print(f"Best params     : {report['best_params']}")
-    print(f"CV Calib Score  : {report['best_cv_score']:.4f}")
+    print(f"CV Surrogate AUC: {report['best_cv_score']:.4f}")
     print(f"AUROC: {auroc:.4f} | AP: {avg_prec:.4f} | TPR@1%FPR: {tpr_at_1pct_fpr:.4f}")
     print(
         f"Score medio     : known={anomaly_scores[y_test == 0].mean():.3f} "
@@ -304,7 +304,7 @@ def test_novelty_equal_budget_report(model_name: str, novelty_loco_fixture) -> N
     budget = 8
 
     model = build_baseline(model_name, budget=budget, seed=42, cv_folds=5)
-    model.fit(X_train_known)
+    model.fit(X_train_known, np.repeat(np.arange(6), 25))
     report = model.get_budget_report()
 
     assert report["model_name"] == model_name
@@ -319,8 +319,8 @@ def test_novelty_equal_budget_report(model_name: str, novelty_loco_fixture) -> N
 def test_novelty_seed_determinism(model_name: str, novelty_loco_fixture) -> None:
     X_train_known, X_test, _ = novelty_loco_fixture
 
-    model_a = build_baseline(model_name, budget=10, seed=7).fit(X_train_known)
-    model_b = build_baseline(model_name, budget=10, seed=7).fit(X_train_known)
+    model_a = build_baseline(model_name, budget=10, seed=7).fit(X_train_known, np.repeat(np.arange(6), 25))
+    model_b = build_baseline(model_name, budget=10, seed=7).fit(X_train_known, np.repeat(np.arange(6), 25))
 
     assert model_a.best_params_ == model_b.best_params_
     assert model_a.best_cv_score_ == model_b.best_cv_score_
@@ -332,7 +332,7 @@ def test_rbf_ocsvm_tunes_nu_and_gamma(novelty_loco_fixture) -> None:
     X_train_known, _, _ = novelty_loco_fixture
 
     model = build_baseline("rbf_ocsvm", budget=12, seed=42, cv_folds=5)
-    model.fit(X_train_known)
+    model.fit(X_train_known, np.repeat(np.arange(6), 25))
 
     assert "nu" in model.best_params_
     assert "gamma" in model.best_params_
@@ -342,7 +342,7 @@ def test_isolation_forest_tunes_tree_and_contamination_params(novelty_loco_fixtu
     X_train_known, _, _ = novelty_loco_fixture
 
     model = build_baseline("isolation_forest", budget=12, seed=42, cv_folds=5)
-    model.fit(X_train_known)
+    model.fit(X_train_known, np.repeat(np.arange(6), 25))
 
     expected_keys = {
         "n_estimators",
@@ -355,13 +355,13 @@ def test_isolation_forest_tunes_tree_and_contamination_params(novelty_loco_fixtu
 
 
 def test_novelty_cross_model_equal_budget(novelty_loco_fixture) -> None:
-    """Verify all 3 registered novelty baselines evaluate the exact same config count."""
+    """Verify all 3 registered novelty baselines respect the same small test budget."""
     X_train_known, _, _ = novelty_loco_fixture
     budget = 6
 
     evaluated_counts = [
         build_baseline(name, budget=budget, seed=42)
-        .fit(X_train_known)
+        .fit(X_train_known, np.repeat(np.arange(6), 25))
         .get_budget_report()["n_configs_evaluated"]
         for name in NOVELTY_MODELS
     ]
@@ -373,7 +373,7 @@ def test_lof_tunes_neighbors_metric_and_contamination(novelty_loco_fixture) -> N
     X_train_known, _, _ = novelty_loco_fixture
 
     model = build_baseline("lof", budget=12, seed=42, cv_folds=5)
-    model.fit(X_train_known)
+    model.fit(X_train_known, np.repeat(np.arange(6), 25))
 
     assert {"n_neighbors", "metric", "contamination"}.issubset(model.best_params_.keys())
 
