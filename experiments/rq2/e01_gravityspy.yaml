@@ -1,0 +1,6 @@
+# E-01 concentration map on real Gravity Spy data: python experiments/run.py experiments/rq2/e01_gravityspy.yaml --out results/e01
+name: e01_gravityspy
+data: experiments.e01_concentration:load_points
+data_params: {points: 196, seed: 0, synthetic: false}
+run: experiments.e01_concentration:run_grid
+params: {fidelity_max_qubits: 14}

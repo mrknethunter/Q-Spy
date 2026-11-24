@@ -6,7 +6,10 @@
 2. Branch from an up-to-date `main`, named after the task: `<TASK-ID>-<short-slug>`, e.g. `M-01-kernels`.
 3. Open a PR into `main` titled `[<TASK-ID>] <issue title>`, with `Closes #<issue number>` in the description.
 4. The team lead reviews and merges (squash). Address review comments on the same branch.
-5. Before opening the PR, rebase on `main` and run the tests: `python -m pytest`.
+5. Before opening the PR, rebase on `main` and run the tests: `make test` (or `python -m pytest`).
+
+Setup once: `python3 -m venv ~/.venvs/qspy && source ~/.venvs/qspy/bin/activate && make install`.
+Add new dependencies to `requirements.txt` with an exact version.
 
 ## Where code goes
 
