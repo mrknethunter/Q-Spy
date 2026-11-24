@@ -1,24 +1,5 @@
 {
-  "l05_freeze": {
-    "commit": "4a6514eba6bdfb9271caa8c80b666c1a2fe45dd9",
-    "files": {
-      "configs/hardware_frozen.yaml": {
-        "bytes": 260,
-        "sha256": "92048ca1de2201e5e2c30307b3c8906b9422f5b5733c3075ef358af0a18c852b"
-      },
-      "data/splits/v1/manifest.json": {
-        "bytes": 540433,
-        "sha256": "d057008a7a8accefad2b12ef7ee5417c5447979d889ba1d28f2e102e6866163e"
-      },
-      "docs/decisions.md": {
-        "bytes": 6086,
-        "sha256": "016e21cce6f86d487cad1c66470ec6fc607a7c2fb856326137865bd22e70a75c"
-      }
-    },
-    "group_approval": "L-05 responsibility; not independently inferred from Git tag",
-    "tag": "hw-freeze",
-    "verification": "local_git_tag_and_blob_hashes"
-  },
+  "l05_freeze": null,
   "overlap_policy": {
     "concentration": "three pairwise-disjoint subsets of main; 30 main IDs unused by concentration",
     "drift_references": "subset of main, intentionally reused for repeated drift measurements; may overlap concentration",
@@ -41,7 +22,7 @@
     "split_manifest_path": "data/splits/v1/manifest.json",
     "split_manifest_sha256": "d057008a7a8accefad2b12ef7ee5417c5447979d889ba1d28f2e102e6866163e"
   },
-  "status": "bound_to_hw_freeze",
+  "status": "draft_pending_l05",
   "subsets": {
     "concentration": [
       {
