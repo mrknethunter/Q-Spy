@@ -28,7 +28,7 @@ fidelity kernels.
   the worst case because only 7 distinct features exist; the projected kernel stays flat (panel a).
 - Alignment (L = 2, s = 0.1778) is flat from 8 to 12 qubits (0.534, 0.535, 0.530) and rises at 14–16 (0.555, 0.570).
   On the 120 hardware points the exact gain of n = 16 over n = 8 is smaller (0.549 vs 0.531); its robustness to the
-  device noise could not be emulated in time (a 16-qubit noisy simulation is ~20× slower than an 8-qubit one), so n = 8,
+  device noise could not be emulated in time (a 16-qubit noisy simulation is more than 20× slower than an 8-qubit one), so n = 8,
   validated on hardware by the pilot, is kept.
 - Honest caveat: at n = 8 the fidelity kernel aligns slightly better than the projected one (0.557 vs 0.534). The
   projected kernel is chosen for hardware cost: 360 circuits for the 120 main points instead of 7140.

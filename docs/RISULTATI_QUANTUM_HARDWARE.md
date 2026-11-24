@@ -130,7 +130,7 @@ E-01 mostra un piccolo guadagno a 14–16 qubit. Sui 120 punti hardware veri, in
 
 Il guadagno sui punti veri è +0,018 (circa il 3%), metà di quello visto sul campione di training. Il costo QPU non cambia
 (sempre 3 circuiti per punto), ma 16 qubit usano il doppio dei qubit fisici, ognuno con il suo rumore. La simulazione
-con il modello di rumore di Kingston a 16 qubit è circa 20 volte più lenta che a 8 e non è stata completata. Finché non
+con il modello di rumore di Kingston a 16 qubit è più di 20 volte più lenta che a 8 e non è stata completata. Finché non
 lo è, la proposta resta 8 qubit, validata sull'hardware dal pilota. Per completare la verifica:
 
 ```bash
