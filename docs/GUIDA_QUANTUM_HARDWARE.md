@@ -130,7 +130,8 @@ Mappa di concentrazione su 196 glitch reali del training (figura `results/e01/e0
 - **la bandwidth s conta più di tutto**: a 8 qubit e 2 layer l'allineamento con le etichette passa da 0,36 (s=1) a 0,53
   (s≈0,18) e crolla sopra s=1 (pannello d);
 - il fidelity kernel si concentra al crescere di n, il proiettato no (pannello a);
-- oltre 8 qubit non si guadagna niente: le feature sono solo 7.
+- da 8 a 12 qubit l'allineamento non cambia; a 14–16 cresce di poco (+0,018 sui punti hardware), ma non è ancora
+  verificato col rumore del chip: per ora restiamo a 8, validati dal pilota (dettagli in `docs/RISULTATI_QUANTUM_HARDWARE.md`).
 
 Emulazione sui 120 punti hardware veri (Q-06): con s=0,1778 e precisione 0,03 l'allineamento resta 0,53 anche col rumore
 del chip, perché i vettori di Bloch dei diversi trigger differiscono 8 volte più del rumore di misura.

@@ -66,7 +66,7 @@ userà la campagna. Simulazione esatta (L0) di tutta la griglia n ∈ {4, 6, …
 **Come leggere la figura** (`results/e01/e01_gravityspy.png`):
 - **(a) concentrazione contro n**, a s = 1: in ordinata la varianza dei valori del kernel fuori dalla diagonale (scala
   logaritmica). Se scende verso zero, il kernel dà lo stesso valore a tutte le coppie e non distingue più nulla. Il
-  fidelity kernel (rosso) scende di circa 8 volte da 4 a 14 qubit; il proiettato (verde) resta piatto. È la
+  fidelity kernel (rosso) scende di circa 6 volte da 4 a 14 qubit; il proiettato (verde) resta piatto. È la
   concentrazione prevista dalla teoria, più lieve del caso peggiore perché le feature distinte sono solo 7 e oltre 7
   qubit si ripetono.
 - **(b) concentrazione contro bandwidth**, a 14 qubit e L = 2: con s troppo piccolo tutti gli stati restano vicini a
@@ -79,9 +79,10 @@ userà la campagna. Simulazione esatta (L0) di tutta la griglia n ∈ {4, 6, …
 
 **Conclusioni.**
 - La bandwidth conta più di qubit e profondità: scegliere s bene vale il 50% di allineamento in più.
-- Oltre 8 qubit non si guadagna nulla (0,534 a n = 8, 0,535 a n = 10, 0,530 a n = 12), e più qubit significano più
-  rumore sull'hardware. Circuiti più profondi (L = 4, 8) non migliorano.
-- **Onestamente:** a n = 8 il fidelity kernel si allinea un po' meglio del proiettato (0,556 contro 0,534). Il
+- Da 8 a 12 qubit l'allineamento non cambia (0,534, 0,535, 0,530); a 14 e 16 qubit risale un po' (0,555 e 0,570).
+  Più qubit però significano più qubit fisici rumorosi sull'hardware (vedi sezione 3bis). Circuiti più profondi
+  (L = 4, 8) non migliorano.
+- **Onestamente:** a n = 8 il fidelity kernel si allinea un po' meglio del proiettato (0,557 contro 0,534). Il
   proiettato resta la scelta per l'hardware per il costo: 360 circuiti per 120 punti invece di 7140.
 
 **Limiti.** Un solo campione di 196 punti e un solo valore di γ per il kernel proiettato; la KTA misura la qualità del
@@ -115,6 +116,29 @@ variabilità, 0,1 no. Teniamo 0,03, validata dal pilota e compatibile con il bud
 
 **Limiti.** L2 non include la mitigazione del server IBM, quindi è pessimistico; il confronto con e senza mitigazione
 sull'hardware vero lo darà il gruppo di controllo di H-02.
+
+---
+
+## 3bis. 8 qubit o 16?
+
+E-01 mostra un piccolo guadagno a 14–16 qubit. Sui 120 punti hardware veri, in simulazione esatta:
+
+| Qubit | KTA esatta (L0) | KTA con solo rumore di misura (L1) | Profondità a 2 qubit su Kingston |
+|---|---|---|---|
+| 8 | 0,531 | 0,532 | 4 |
+| 16 | 0,549 | 0,546 | 4 |
+
+Il guadagno sui punti veri è +0,018 (circa il 3%), metà di quello visto sul campione di training. Il costo QPU non cambia
+(sempre 3 circuiti per punto), ma 16 qubit usano il doppio dei qubit fisici, ognuno con il suo rumore. La simulazione
+con il modello di rumore di Kingston a 16 qubit è circa 20 volte più lenta che a 8 e non è stata completata. Finché non
+lo è, la proposta resta 8 qubit, validata sull'hardware dal pilota. Per completare la verifica:
+
+```bash
+python -c "
+import sys; sys.path.insert(0, '.')
+from experiments.q06_noise_prediction import load_main_subset, predict
+X, y = load_main_subset(); print(predict(X, y, configs=[(0.1778, 0.03)], n_qubits=16).round(4))"
+```
 
 ---
 

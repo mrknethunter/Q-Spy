@@ -7,7 +7,7 @@ needs a new tag (`hw-freeze-v2`) and a written reason here. Machine-readable val
 
 | Parameter | Value | Why |
 |---|---|---|
-| Qubits n | 8 | ≥ 7 needed to encode all 7 features; label alignment plateaus beyond 8 (E-01); validated by the pilot |
+| Qubits n | 8 | ≥ 7 needed to encode all 7 features; validated by the pilot. 14–16 qubits align slightly better in exact simulation (+0.018 KTA on the hardware points) but are unverified under device noise (section 2) |
 | Layers L | 2 | two-qubit depth 4 on ibm_kingston, no SWAPs; deeper circuits align worse (E-01) |
 | Bandwidth s | 0.1778 | maximum label alignment of the E-01 grid; s = 1 (pilot value) is 40% worse |
 | Entanglement | CZ chain, on | the product-state ablation (R2) is computed classically, no QPU needed |
@@ -24,10 +24,13 @@ training pool (28 per known class), exact simulation, n ∈ {4…16}, L ∈ {1, 
 fidelity kernels.
 - Bandwidth dominates: at n = 8, L = 2 the kernel-target alignment (KTA) goes from 0.36 at s = 1 to 0.53 at s = 0.18 and
   falls below 0.25 for s > 2 (panel d).
-- The fidelity kernel concentrates as n grows (off-diagonal variance ×8 smaller from 4 to 14 qubits at s = 1), less than
+- The fidelity kernel concentrates as n grows (off-diagonal variance about 6× smaller from 4 to 14 qubits at s = 1), less than
   the worst case because only 7 distinct features exist; the projected kernel stays flat (panel a).
-- Beyond 8 qubits alignment does not improve (0.534 at n = 8, 0.535 at n = 10, 0.530 at n = 12).
-- Honest caveat: at n = 8 the fidelity kernel aligns slightly better than the projected one (0.556 vs 0.534). The
+- Alignment (L = 2, s = 0.1778) is flat from 8 to 12 qubits (0.534, 0.535, 0.530) and rises at 14–16 (0.555, 0.570).
+  On the 120 hardware points the exact gain of n = 16 over n = 8 is smaller (0.549 vs 0.531); its robustness to the
+  device noise could not be emulated in time (a 16-qubit noisy simulation is ~20× slower than an 8-qubit one), so n = 8,
+  validated on hardware by the pilot, is kept.
+- Honest caveat: at n = 8 the fidelity kernel aligns slightly better than the projected one (0.557 vs 0.534). The
   projected kernel is chosen for hardware cost: 360 circuits for the 120 main points instead of 7140.
 
 **Q-06, emulation on the 120 main hardware points** (all outside training and validation; reproducible with
