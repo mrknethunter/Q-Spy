@@ -98,9 +98,20 @@ negate it when wrapping a scikit-learn detector. `tests/contracts/model_contract
 Representation names used in results: `R0` linear on `X_tilde`, `R1` RBF/Laplacian on `X_tilde`,
 `R2` projected without entanglement, `R3` projected with entanglement, `R4` linear on Bloch vectors, `R5` fidelity kernel.
 
-## Results table (M-02, M-03 write; M-06, figures read)
+## Results table and experiment runner (I-03, M-02, M-03; M-06 and figures read)
 
-`results/<experiment>.parquet`, one row per metric value (long format):
+An experiment is a YAML file run by `python experiments/run.py <config.yaml> [--out DIR]`:
+
+```yaml
+name: e01_gravityspy                          # output file name
+data: experiments.e01_concentration:load_points   # function returning a tuple of positional arguments
+data_params: {points: 196, seed: 0}
+run: experiments.e01_concentration:run_grid   # function(*data, **params) -> pandas.DataFrame
+params: {fidelity_max_qubits: 14}
+```
+
+It writes `<out>/<name>.csv` and `<out>/<name>.run.json` (full config, row count, git commit, finish time).
+Few-shot and novelty experiments (M-02, M-03) return one row per metric value (long format):
 
 | Column | Type | Example |
 |---|---|---|
