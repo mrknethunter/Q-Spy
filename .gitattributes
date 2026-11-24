@@ -1,1 +1,3 @@
 * text=auto
+# Hash-pinned by D-04/D-05: never convert line endings, or the SHA-256 checks fail on Windows checkouts
+data/splits/**/*.json text eol=lf
