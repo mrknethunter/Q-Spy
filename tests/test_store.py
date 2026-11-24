@@ -21,3 +21,8 @@ def test_simulated_runs_can_be_overwritten(tmp_path):
 def test_rejects_ids_that_do_not_match_rows(tmp_path):
     with pytest.raises(ValueError):
         write_bloch("run-a", ["a"], synthetic_bloch(2, 3), {"tier": "L0"}, root=tmp_path)
+
+
+def test_meta_names_its_run(tmp_path):
+    write_bloch("run-a", ["a"], synthetic_bloch(1, 2), {"tier": "L0"}, root=tmp_path)
+    assert read_bloch("run-a", root=tmp_path)[2]["run_id"] == "run-a"

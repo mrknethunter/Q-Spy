@@ -45,7 +45,8 @@ or `"P3"` (O3a -> O3b). The three id sets are disjoint. In P2 the held-out class
 
 ```python
 quantum.embed.EmbedConfig(n_qubits: int, layers: int, s: float, entangle: bool = True)
-quantum.embed.embed(X_tilde, cfg, backend="L0", *, precision=0.03, seed=None, submit=False, device="ibm_kingston") -> EmbedResult
+quantum.embed.embed(X_tilde, cfg, backend="L0", *, precision=0.03, seed=None, submit=False, device="ibm_kingston",
+                    mitigation=True, mode=None) -> EmbedResult   # mode: a qiskit_ibm_runtime Batch
 quantum.embed.estimate_usage(n_circuits, shots, n_subjobs=1) -> float   # QPU seconds, 30% margin included
 quantum.embed.EmbedResult(B: np.ndarray, meta: dict)
 ```
@@ -53,7 +54,7 @@ quantum.embed.EmbedResult(B: np.ndarray, meta: dict)
 - `backend` is the tier: `"L0"` exact, `"L1"` shots, `"L2"` fake Heron, `"HW"` IBM hardware.
 - `B` has shape `(N, n_qubits, 3)` with `B[i, q] = (<X_q>, <Y_q>, <Z_q>)`, `float32` or `float64`,
   `||B[i, q]|| <= 1` up to shot noise.
-- `meta` contains at least `tier` and `embed_config` (a dict of `EmbedConfig`); a submitted `HW` run adds `job_ids`, `usage_s` and
+- `meta` contains at least `tier` and `embed_config` (a dict of `EmbedConfig`); a submitted `HW` run adds `job_ids`, `usage_s`, `mitigation` (the options applied) and
   `calibration` (last update, T1/T2/readout error of the used qubits, two-qubit gate errors between them).
 - `"HW"` defaults to a dry run (no network, `B is None`; `meta` has `n_circuits`, `shots`, `executions`, `estimated_qpu_s`);
   it submits only with `submit=True`.
@@ -67,7 +68,7 @@ store.io.read_bloch(run_id: str, root=None) -> tuple[list[str], np.ndarray, dict
 ```
 Round trip is exact (ids order, values, meta). Writing an existing `run_id` whose `meta["tier"] == "HW"`
 raises `FileExistsError`. `root=None` means `store/runs/`. G-03 `compare_runs` consumes this tuple.
-On disk a run is `store/runs/<run_id>/` with `B.npy`, `ids.json` and `meta.json`; `write_bloch` adds `created_at` and
+On disk a run is `store/runs/<run_id>/` with `B.npy`, `ids.json` and `meta.json`; `write_bloch` adds `run_id`, `created_at` and
 `git_commit` to `meta`. Runs whose id starts with `hw-` are committed to git, all others are ignored.
 
 ## Kernels (M-01)
