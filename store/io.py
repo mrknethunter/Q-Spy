@@ -21,7 +21,7 @@ def write_bloch(run_id: str, ids, B: np.ndarray, meta: dict, root: str | Path | 
     path.mkdir(parents=True, exist_ok=True)
     np.save(path / "B.npy", B)
     (path / "ids.json").write_text(json.dumps(ids))
-    meta = {**meta, "created_at": datetime.now(timezone.utc).isoformat(), "git_commit": _git_commit()}
+    meta = {**meta, "run_id": run_id, "created_at": datetime.now(timezone.utc).isoformat(), "git_commit": _git_commit()}
     (path / "meta.json").write_text(json.dumps(meta, indent=2, default=str))  # default=str: never lose a run over a type
     return path
 

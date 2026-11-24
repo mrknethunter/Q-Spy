@@ -143,3 +143,21 @@ def test_embed_hw_submit_path_runs_locally_on_a_small_fake_device():
     assert set(cal["qubits"]) == set(res.meta["layout"]) and cal["last_update"]
     assert all(v["readout_error"] is not None for v in cal["qubits"].values()) and cal["two_qubit_errors"]
     assert np.corrcoef(res.B.ravel(), embed(X[:4], cfg, "L0").B.ravel())[0, 1] > 0.7
+
+
+@pytest.mark.parametrize("mitigation", [True, False])
+def test_hw_records_the_mitigation_it_applied(mitigation):
+    from qiskit_ibm_runtime.fake_provider import FakeManilaV2
+    meta = embed(X[:3], EmbedConfig(2, 1, 1.0), "HW", precision=0.1, submit=True, device=FakeManilaV2(), seed=1,
+                 mitigation=mitigation).meta
+    assert meta["mitigation"] == {"measure_mitigation": mitigation, "twirling": mitigation, "dynamical_decoupling": mitigation}
+
+
+def test_hw_jobs_can_share_a_batch():
+    from qiskit_ibm_runtime import Batch
+    from qiskit_ibm_runtime.fake_provider import FakeManilaV2
+    dev = FakeManilaV2()
+    with Batch(backend=dev) as batch:
+        runs = [embed(X[:3], EmbedConfig(2, 1, 1.0), "HW", precision=0.1, submit=True, device=dev, seed=1, mode=batch)
+                for _ in range(2)]
+    assert all(r.B.shape == (3, 2, 3) for r in runs)

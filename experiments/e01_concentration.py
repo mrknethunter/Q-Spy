@@ -26,13 +26,13 @@ def load_points(points: int, seed: int, synthetic: bool):
         rows = np.random.default_rng(seed).choice(len(df), min(points, len(df)), replace=False)
         return synthetic_features(df)[rows], df["label"].to_numpy()[rows]
     from data.curate import load_curated
-    from features.transforms import make_features
-    df = load_curated()
-    known = df[~df["is_held_out"]]
-    per_class = points // known["label"].nunique()
-    sample = known.groupby("label").sample(n=per_class, random_state=seed)
-    X, _ = make_features(sample)  # unsupervised: scaling fitted on the sample itself
-    return X, sample["label"].to_numpy()
+    from data.splits import load_split
+    from scripts.qpu_campaign import gravityspy_features
+    df = load_curated().set_index("id", drop=False)
+    features = gravityspy_features({"scaler_protocol": "P2", "scaler_seed": 0}, df)  # same scaling as the campaign
+    train = df.loc[list(load_split("P2", 0, held_out="Fast_Scattering").train_ids)]
+    sample = train.groupby("label").sample(n=points // train["label"].nunique(), random_state=seed)
+    return features(sample["id"]), sample["label"].to_numpy()
 
 
 def _measures(K, y):

@@ -239,3 +239,4 @@ store/runs/*
 
 # E-01 synthetic previews (real-data results are committed)
 results/e01/*synthetic*
+results/campaign/dry-*
