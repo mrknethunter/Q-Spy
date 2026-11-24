@@ -5,7 +5,7 @@ from qiskit.circuit import ParameterVector
 
 
 def feature_map(n_qubits: int, layers: int, d: int = 7, entangle: bool = True) -> QuantumCircuit:
-    """Parameters are angles: bind s * pi * X_tilde. With n_qubits < d only the first n_qubits features are used."""
+    # parameters are angles (bind s * pi * X_tilde); with n_qubits < d only the first n_qubits features are used
     x = ParameterVector("x", min(n_qubits, d))
     qc = QuantumCircuit(n_qubits)
     for _ in range(layers):

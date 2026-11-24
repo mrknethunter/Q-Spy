@@ -1,8 +1,3 @@
-"""Embed a few points on every tier, compare each with the exact result, store every tier (store/runs/<run_id>-<tier>).
-
-    python scripts/qpu_pilot.py             dry run: L0, L1, L2 locally + estimated QPU seconds
-    python scripts/qpu_pilot.py --submit    real IBM run (needs "QPU approved", docs/qpu_policy.md)
-"""
 from __future__ import annotations
 
 import argparse
@@ -17,6 +12,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # allow `python
 from quantum.embed import DEFAULT_DEVICE, EmbedConfig, embed  # noqa: E402
 from store.io import write_bloch  # noqa: E402
 from tests.fixtures.synthetic import synthetic_curated, synthetic_features  # noqa: E402
+
+USAGE = (
+    "Embed a few points on every tier, compare each with the exact result, store every tier.\n"
+    "  python scripts/qpu_pilot.py            dry run: L0, L1, L2 locally + estimated QPU seconds\n"
+    "  python scripts/qpu_pilot.py --submit   real IBM run (needs 'QPU approved', docs/qpu_policy.md)"
+)
 
 
 def _compare(B, ref):
@@ -53,7 +54,7 @@ def run_pilot(points=10, qubits=8, layers=2, s=1.0, precision=0.03, submit=False
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(description=USAGE, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--points", type=int, default=10)
     p.add_argument("--qubits", type=int, default=8)
     p.add_argument("--layers", type=int, default=2)
