@@ -1,0 +1,143 @@
+{
+  "completed_cases": 80,
+  "data_kind": "gravityspy_d02",
+  "dataset_sha256": "c8bb3d84efa5b583ee41d671ae195b73bb5cdf901e3af03e351e1e3eac0260f1",
+  "execution": "independent_family_processes",
+  "experiment": "E-03",
+  "files": {
+    "audit.json": "01afc360fb419c37a585adcf1434d4bb7f5ba6cc36e24bbb5557931b9c0e519b",
+    "e03_metrics.csv": "148122048a294f2e4a5b517b99742f5094913415b93fd0e08579b769d7a6ef39",
+    "e03_paired_differences.csv": "c5bf33fed8c6a0e343dba0afd2a40d53af72a1bec615d9989d96ed596250ffab",
+    "e03_summary.csv": "3a0dc6f4cf6954e078d642ccc1992d01f84a73a55e7010e323105aff3497289d",
+    "family_errors.csv": "311c2ceba8841646bf57120b3c1a1193a10505e21611d722998fdabdc2e8f866",
+    "neighbors_fast_misses.csv": "9959dadaf0227e1da93a36953e082c469ecac92b4fb6257b675aa70c05fe46df",
+    "predictions/Blip.csv.gz": "2c36bb32b25721a65cddf4bda9c1d76cb7b8d9b827d73bebd77011ec4b746315",
+    "predictions/Extremely_Loud.csv.gz": "33d33e7fb91a9b67c37319399f24665c41bb0266aed21f7ee7e94801a95e966c",
+    "predictions/Fast_Scattering.csv.gz": "b89e868d8d3bb053b4f5d2f291730bf60b0a753827ac57375c1a0cf9f0031976",
+    "predictions/Koi_Fish.csv.gz": "c21eb85494eb4bc49c9f7ac147789d37c7bd6987c713daa5f39fa745fe13e830",
+    "predictions/Low_Frequency_Burst.csv.gz": "1ea0a7ad190aaad64d70f084746bbedfc04abf034d63e6f26f3ce8dba83aa2f3",
+    "predictions/Low_Frequency_Lines.csv.gz": "b2296375a46a61c4c2e2f722c06d07b4a7f4a68c28aa5b17c66ddceda015a031",
+    "predictions/Scattered_Light.csv.gz": "ce31c1256d998e60fb545a9accda6a0dbde615a24eafb07df314debc7174113d",
+    "predictions/Tomte.csv.gz": "1fa9def75de2c11ea1af90279ad04ac8103ac35e96ca7a9caec6b0a125e99b4c",
+    "roc_curves.csv.gz": "63a61ad24954ee5c3940ad7284a9e7d74a7f5e183b40c2dd6e4181e06ede4113",
+    "roc_fast_scattering.png": "c1376b28321ef5a808410abefdc4c43fd45ef376d563eef33533bf3e0ee35a05",
+    "roc_rotations.png": "db66c221fa763de291377af0cc652acf89a5439d2668655cf6fa32a535d4ddea",
+    "selected_ids.json.gz": "f272ac8210f0bfb4c6fd83ec2d401b4c023b0386518c2d11e1e2af55443757c4"
+  },
+  "finished_at": "2026-11-24T18:34:52.755519+00:00",
+  "input_rows": 318801,
+  "metric_rows": 3200,
+  "protocol": "P2",
+  "python": "3.12.14",
+  "rotations": [
+    {
+      "cases": 10,
+      "family": "Fast_Scattering",
+      "runtime_seconds": 165.27656156500007
+    },
+    {
+      "cases": 10,
+      "family": "Blip",
+      "runtime_seconds": 164.22651951600005
+    },
+    {
+      "cases": 10,
+      "family": "Extremely_Loud",
+      "runtime_seconds": 166.09513506899998
+    },
+    {
+      "cases": 10,
+      "family": "Koi_Fish",
+      "runtime_seconds": 164.305628459
+    },
+    {
+      "cases": 10,
+      "family": "Low_Frequency_Burst",
+      "runtime_seconds": 160.71245057200008
+    },
+    {
+      "cases": 10,
+      "family": "Low_Frequency_Lines",
+      "runtime_seconds": 159.65490650100014
+    },
+    {
+      "cases": 10,
+      "family": "Scattered_Light",
+      "runtime_seconds": 160.579680908
+    },
+    {
+      "cases": 10,
+      "family": "Tomte",
+      "runtime_seconds": 161.05954762200008
+    }
+  ],
+  "runtime_seconds": 339.604740212,
+  "settings": {
+    "bootstrap": 5000,
+    "bootstrap_seed": 29,
+    "budget": 8,
+    "cv_folds": 3,
+    "embed_batch_size": 512,
+    "embed_config": {
+      "entangle": true,
+      "layers": 2,
+      "n_qubits": 8,
+      "s": 0.1778
+    },
+    "held_outs": [
+      "Fast_Scattering",
+      "Blip",
+      "Extremely_Loud",
+      "Koi_Fish",
+      "Low_Frequency_Burst",
+      "Low_Frequency_Lines",
+      "Scattered_Light",
+      "Tomte"
+    ],
+    "max_test": 8192,
+    "max_train": 2048,
+    "max_val": 2048,
+    "sampling": "proportional_label_detector_min_one_SHA256",
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "test_seed": 2026,
+    "workers": 4
+  },
+  "source_sha256": {
+    "data/curate.py": "7231817a6c70a182e8a5070a55579ee6f511ecedd9dfa65d99bdde1c1c3cebaa",
+    "data/manifest.json": "e24fc84538d2957c889762448300ab9f9ec1261cb11c64e8eca32008536bab6c",
+    "data/splits.py": "6851d0f52c87914d1421b7df93401fa7aee8755f40a7094dde866888927d5a55",
+    "experiments/e03_novelty.py": "d72fa857ca8c42e5ae5d3ba567c7157a5cee3a1e3e6b5eea5c73cf102394b441",
+    "experiments/e03_parallel.py": "7a43851d2d749f393e5eb39c7b10f3c96e90e4dc4fd75d116ac1844ad2500b5a",
+    "features/transforms.py": "222aca08c6f77157b84bf323b19fb9d3053ba1fee1b5f25da8beb2ef4e1560a8",
+    "kernels/projected.py": "b5b59747fb779aba26cab5983db9a3ed4edd5f8ec862ddfc9e492b83cf4a44f1",
+    "models/baselines.py": "6084d901b1f5a04c190a7aa8f37c307392196f2b47811bd97da882740669a9b9",
+    "quantum/embed.py": "0bd625260d3c3aa7cc04094f63c72eb9e8d8af7d58c37799251dca4ace2855bd",
+    "quantum/feature_map.py": "cf02d83b96e2b1871af70f5ee0619747e347e531b73d307d4fe6d9ad98e9a53a",
+    "quantum/observables.py": "66f265444cda99f559977e328484e24856c31b78090b1c1e8f0f15b9019d83a7",
+    "requirements.txt": "d1c91bff8eaaa0a060984936cd211db6c5c611416491769f23c155ea28cfc448"
+  },
+  "split_manifest_sha256": "d057008a7a8accefad2b12ef7ee5417c5447979d889ba1d28f2e102e6866163e",
+  "started_at": "2026-11-24T18:29:13.150819+00:00",
+  "status": "complete",
+  "tier": "L0",
+  "versions": {
+    "matplotlib": "3.10.9",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "qiskit": "2.6.2",
+    "qiskit-aer": "0.17.2",
+    "scikit-learn": "1.7.2"
+  },
+  "worker_seconds_sum": 1301.9104302120004
+}

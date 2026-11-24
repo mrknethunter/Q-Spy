@@ -1,0 +1,48 @@
+{
+  "config": {
+    "name": "e03_gravityspy",
+    "data": "experiments.e03_novelty:load_data",
+    "data_params": {},
+    "run": "experiments.e03_parallel:run_parallel",
+    "params": {
+      "workers": 4,
+      "embed_batch_size": 512,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "held_outs": [
+        "Fast_Scattering",
+        "Blip",
+        "Extremely_Loud",
+        "Koi_Fish",
+        "Low_Frequency_Burst",
+        "Low_Frequency_Lines",
+        "Scattered_Light",
+        "Tomte"
+      ],
+      "budget": 8,
+      "cv_folds": 3,
+      "n_qubits": 8,
+      "layers": 2,
+      "s": 0.1778,
+      "max_train": 2048,
+      "max_val": 2048,
+      "max_test": 8192,
+      "bootstrap": 5000,
+      "artifact_dir": "results/e03",
+      "store_bloch": true
+    }
+  },
+  "rows": 3200,
+  "git_commit": null,
+  "finished_at": "2026-11-24T18:34:52.840265+00:00"
+}
