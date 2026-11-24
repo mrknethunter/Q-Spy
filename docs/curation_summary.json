@@ -1,0 +1,329 @@
+{
+  "input_rows": 676613,
+  "config": {
+    "confidence_threshold": 0.9,
+    "known_classes": [
+      "Blip",
+      "Extremely_Loud",
+      "Koi_Fish",
+      "Low_Frequency_Burst",
+      "Low_Frequency_Lines",
+      "Scattered_Light",
+      "Tomte"
+    ],
+    "coincidence_window_s": 0.1,
+    "max_per_class": null,
+    "seed": 42,
+    "drop_extreme_q": true
+  },
+  "removed": {
+    "confidence_below_threshold_or_invalid": 183146,
+    "held_out_outside_o3": 0,
+    "invalid_id_label_time_or_feature": 0,
+    "q_value_equals_1e20": 34368,
+    "repeated_id": 1,
+    "coincident_trigger": 47445,
+    "unselected_class": 92852,
+    "stratified_cap": 0
+  },
+  "eligible_counts_after_dedup": {
+    "1080Lines": 28576,
+    "1400Ripples": 3256,
+    "Air_Compressor": 1544,
+    "Blip": 22086,
+    "Blip_Low_Frequency": 18101,
+    "Chirp": 59,
+    "Extremely_Loud": 20195,
+    "Fast_Scattering": 56509,
+    "Helix": 211,
+    "Koi_Fish": 19078,
+    "Light_Modulation": 820,
+    "Low_Frequency_Burst": 27872,
+    "Low_Frequency_Lines": 19346,
+    "No_Glitch": 16007,
+    "None_of_the_Above": 84,
+    "Paired_Doves": 448,
+    "Power_Line": 3938,
+    "Repeating_Blips": 2893,
+    "Scattered_Light": 112689,
+    "Scratchy": 3152,
+    "Tomte": 41026,
+    "Violin_Mode": 1061,
+    "Wandering_Line": 108,
+    "Whistle": 12594
+  },
+  "output_rows": 318801,
+  "known_classes": [
+    "Blip",
+    "Extremely_Loud",
+    "Koi_Fish",
+    "Low_Frequency_Burst",
+    "Low_Frequency_Lines",
+    "Scattered_Light",
+    "Tomte"
+  ],
+  "held_out": "Fast_Scattering",
+  "counts_before_cap": {
+    "Blip": {
+      "H1": 14890,
+      "L1": 7196
+    },
+    "Extremely_Loud": {
+      "H1": 12614,
+      "L1": 7581
+    },
+    "Koi_Fish": {
+      "H1": 11134,
+      "L1": 7944
+    },
+    "Low_Frequency_Burst": {
+      "H1": 20601,
+      "L1": 7271
+    },
+    "Low_Frequency_Lines": {
+      "H1": 4735,
+      "L1": 14611
+    },
+    "Scattered_Light": {
+      "H1": 61469,
+      "L1": 51220
+    },
+    "Tomte": {
+      "H1": 1627,
+      "L1": 39399
+    },
+    "Fast_Scattering": {
+      "H1": 1280,
+      "L1": 55229
+    }
+  },
+  "counts_by_detector": {
+    "Blip": {
+      "H1": 14890,
+      "L1": 7196
+    },
+    "Extremely_Loud": {
+      "H1": 12614,
+      "L1": 7581
+    },
+    "Koi_Fish": {
+      "H1": 11134,
+      "L1": 7944
+    },
+    "Low_Frequency_Burst": {
+      "H1": 20601,
+      "L1": 7271
+    },
+    "Low_Frequency_Lines": {
+      "H1": 4735,
+      "L1": 14611
+    },
+    "Scattered_Light": {
+      "H1": 61469,
+      "L1": 51220
+    },
+    "Tomte": {
+      "H1": 1627,
+      "L1": 39399
+    },
+    "Fast_Scattering": {
+      "H1": 1280,
+      "L1": 55229
+    }
+  },
+  "counts_by_run": {
+    "O1": {
+      "Blip": {
+        "H1": 2071,
+        "L1": 370
+      },
+      "Extremely_Loud": {
+        "H1": 245,
+        "L1": 48
+      },
+      "Koi_Fish": {
+        "H1": 613,
+        "L1": 98
+      },
+      "Low_Frequency_Burst": {
+        "H1": 922,
+        "L1": 2220
+      },
+      "Low_Frequency_Lines": {
+        "H1": 1602,
+        "L1": 3064
+      },
+      "Scattered_Light": {
+        "H1": 2715,
+        "L1": 188
+      },
+      "Tomte": {
+        "H1": 41,
+        "L1": 10
+      },
+      "Fast_Scattering": {
+        "H1": 0,
+        "L1": 0
+      }
+    },
+    "O2": {
+      "Blip": {
+        "H1": 6794,
+        "L1": 2532
+      },
+      "Extremely_Loud": {
+        "H1": 1485,
+        "L1": 228
+      },
+      "Koi_Fish": {
+        "H1": 2071,
+        "L1": 788
+      },
+      "Low_Frequency_Burst": {
+        "H1": 298,
+        "L1": 1174
+      },
+      "Low_Frequency_Lines": {
+        "H1": 1588,
+        "L1": 7778
+      },
+      "Scattered_Light": {
+        "H1": 1617,
+        "L1": 3731
+      },
+      "Tomte": {
+        "H1": 228,
+        "L1": 75
+      },
+      "Fast_Scattering": {
+        "H1": 0,
+        "L1": 0
+      }
+    },
+    "O3a": {
+      "Blip": {
+        "H1": 2943,
+        "L1": 1976
+      },
+      "Extremely_Loud": {
+        "H1": 6165,
+        "L1": 4318
+      },
+      "Koi_Fish": {
+        "H1": 5277,
+        "L1": 4304
+      },
+      "Low_Frequency_Burst": {
+        "H1": 17532,
+        "L1": 1209
+      },
+      "Low_Frequency_Lines": {
+        "H1": 636,
+        "L1": 792
+      },
+      "Scattered_Light": {
+        "H1": 6271,
+        "L1": 5416
+      },
+      "Tomte": {
+        "H1": 536,
+        "L1": 18729
+      },
+      "Fast_Scattering": {
+        "H1": 145,
+        "L1": 21759
+      }
+    },
+    "O3b": {
+      "Blip": {
+        "H1": 3082,
+        "L1": 2318
+      },
+      "Extremely_Loud": {
+        "H1": 4719,
+        "L1": 2987
+      },
+      "Koi_Fish": {
+        "H1": 3173,
+        "L1": 2754
+      },
+      "Low_Frequency_Burst": {
+        "H1": 1849,
+        "L1": 2668
+      },
+      "Low_Frequency_Lines": {
+        "H1": 909,
+        "L1": 2977
+      },
+      "Scattered_Light": {
+        "H1": 50866,
+        "L1": 41885
+      },
+      "Tomte": {
+        "H1": 822,
+        "L1": 20585
+      },
+      "Fast_Scattering": {
+        "H1": 1135,
+        "L1": 33470
+      }
+    }
+  },
+  "feature_columns": [
+    "duration",
+    "peak_frequency",
+    "central_freq",
+    "bandwidth",
+    "amplitude",
+    "snr",
+    "q_value"
+  ],
+  "feature_selection_status": "provisional_in_D01",
+  "coincidence_window_ns": 100000000,
+  "source": {
+    "doi": "10.5281/zenodo.5649212",
+    "version": "v1.0.0",
+    "files": [
+      {
+        "name": "H1_O1.csv",
+        "size_bytes": 15963563,
+        "md5": "91963313b1574e083bc58915e0aa8ca1"
+      },
+      {
+        "name": "H1_O2.csv",
+        "size_bytes": 73098153,
+        "md5": "1c3eb9432107c6fee671cc76ad632e69"
+      },
+      {
+        "name": "H1_O3a.csv",
+        "size_bytes": 90238691,
+        "md5": "29aea278b622cd97496971f7c07f7d6a"
+      },
+      {
+        "name": "H1_O3b.csv",
+        "size_bytes": 111575139,
+        "md5": "590290fe3c7ddf8cd9fa85c3a09cd5e4"
+      },
+      {
+        "name": "L1_O1.csv",
+        "size_bytes": 27212877,
+        "md5": "34c7d08070f302d3b366767610748f40"
+      },
+      {
+        "name": "L1_O2.csv",
+        "size_bytes": 65785621,
+        "md5": "df0a831cb79509e2aae38a4651c796fc"
+      },
+      {
+        "name": "L1_O3a.csv",
+        "size_bytes": 142258875,
+        "md5": "3d3d0409817499c84fb2e0a2b211b5a5"
+      },
+      {
+        "name": "L1_O3b.csv",
+        "size_bytes": 216062292,
+        "md5": "90d0bc16448bca72818ed9abf267979c"
+      }
+    ]
+  }
+}
