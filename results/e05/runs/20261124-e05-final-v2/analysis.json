@@ -1,0 +1,80 @@
+{
+  "analysis": null,
+  "blockers": [
+    "gamma is not defined by the frozen configuration and was not supplied explicitly",
+    "docs/decisions.md records L-05 as draft for lead approval",
+    "D-05 documentation still describes the subset as a draft/review proposal without final acceptance",
+    "No complete H-02 campaign matching D-05 IDs and frozen embedding metadata is available",
+    "Pilot-like HW runs were found, but do not match the H-02 campaign run manifest and were not substituted",
+    "G-03 diagnostics.compare is unavailable in this checkout: No module named 'diagnostics.compare'"
+  ],
+  "campaign_candidates": [],
+  "figures_generated": [],
+  "figures_not_generated": [
+    {
+      "file": "bloch_rmse_per_qubit.svg",
+      "reason": "Matched H-02 HW/L0 Bloch errors from G-03 are unavailable."
+    },
+    {
+      "file": "kernel_alignment.svg",
+      "reason": "H-02 kernels, an explicit gamma and G-03 kernel alignment are unavailable."
+    },
+    {
+      "file": "concentration_variance.svg",
+      "reason": "Matched H-02 runs and an explicit gamma are unavailable."
+    },
+    {
+      "file": "effective_rank.svg",
+      "reason": "Matched H-02 runs and an explicit gamma are unavailable."
+    },
+    {
+      "file": "drift_rmse_per_qubit.svg",
+      "reason": "H-02 drift-start/end references and G-03 drift_report are unavailable."
+    },
+    {
+      "file": "eigen_spectrum_<experiment>.svg",
+      "reason": "No H-02 group has matched runs and an explicit gamma for its projected-kernel spectrum."
+    }
+  ],
+  "frozen_config": {
+    "concentration_qubits": [
+      4,
+      8,
+      12
+    ],
+    "device": "ibm_kingston",
+    "layers": 2,
+    "n_qubits": 8,
+    "precision": 0.03,
+    "s": 0.1778
+  },
+  "hardware_validation": "not_validated",
+  "provenance": {
+    "campaign_id": null,
+    "campaign_source": null,
+    "d05_approval": "pending",
+    "d05_approval_detail": "D-05 documentation still describes the subset as a draft/review proposal without final acceptance",
+    "d05_selection_sha256": "7fee3e50508c951f1161db9e3cd593ea66e609e572d3e38dc7bdbbbc58a0c7c7",
+    "d05_status": "bound_to_hw_freeze",
+    "g03_available": false,
+    "gamma": {
+      "blocked_reason": "gamma is not defined by the frozen configuration and was not supplied explicitly",
+      "source": null,
+      "value": null
+    },
+    "l05_approval": "pending",
+    "l05_approval_detail": "docs/decisions.md records L-05 as draft for lead approval",
+    "l05_tag": "hw-freeze",
+    "store_root": "/home/michio/Documents/Q_SPY/Q-Spy/store/runs"
+  },
+  "schema": "q-spy-e05-report-v1",
+  "status": "blocked_by_prerequisites",
+  "store_errors": [],
+  "store_runs_seen": [
+    "hw-20261124T005515Z-HW",
+    "hw-20261124T005515Z-L0",
+    "hw-20261124T005515Z-L1",
+    "hw-20261124T005515Z-L2"
+  ],
+  "task": "E-05"
+}
