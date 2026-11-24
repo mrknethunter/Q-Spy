@@ -100,11 +100,11 @@ def gravityspy_features(frozen, curated=None):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=USAGE, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--config", default="configs/hardware_frozen.yaml")
-    p.add_argument("--device", default=DEFAULT_DEVICE)
+    p.add_argument("--device", help="overrides the frozen device")
     p.add_argument("--submit", action="store_true", help="really run on IBM hardware (consumes QPU time)")
     a = p.parse_args()
     from data.hardware_subsets import load_hardware_subsets
     frozen = yaml.safe_load(Path(a.config).read_text())
     subsets = load_hardware_subsets(allow_draft=not a.submit)
-    s = run_campaign(frozen, subsets, gravityspy_features(frozen), submit=a.submit, device=a.device)
+    s = run_campaign(frozen, subsets, gravityspy_features(frozen), submit=a.submit, device=a.device or frozen["device"])
     print(json.dumps({k: v for k, v in s.items() if k != "frozen"}, indent=2, default=str))

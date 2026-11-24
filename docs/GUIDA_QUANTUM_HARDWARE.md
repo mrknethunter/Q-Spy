@@ -124,6 +124,22 @@ python scripts/qpu_pilot.py [--submit]                         # H-01
 python scripts/qpu_campaign.py [--submit]                      # H-02, dopo il tag hw-freeze
 ```
 
+## 8bis. Cosa ha detto E-01 sui dati veri e cosa abbiamo congelato (L-05)
+
+Mappa di concentrazione su 196 glitch reali del training (figura `results/e01/e01_gravityspy.png`):
+- **la bandwidth s conta più di tutto**: a 8 qubit e 2 layer l'allineamento con le etichette passa da 0,36 (s=1) a 0,53
+  (s≈0,18) e crolla sopra s=1 (pannello d);
+- il fidelity kernel si concentra al crescere di n, il proiettato no (pannello a);
+- da 8 a 12 qubit l'allineamento non cambia; a 14–16 cresce di poco (+0,018 sui punti hardware), ma non è ancora
+  verificato col rumore del chip: per ora restiamo a 8, validati dal pilota (dettagli in `docs/RISULTATI_QUANTUM_HARDWARE.md`).
+
+Emulazione sui 120 punti hardware veri (Q-06): con s=0,1778 e precisione 0,03 l'allineamento resta 0,53 anche col rumore
+del chip, perché i vettori di Bloch dei diversi trigger differiscono 8 volte più del rumore di misura.
+
+Configurazione proposta per l'hardware: **n=8, L=2, s=0,1778, precisione 0,03**, stima 413 s su 587. Tutti i dettagli,
+le ipotesi pre-registrate e la procedura di scelta degli iperparametri sono in `docs/decisions.md`; i valori in
+`configs/hardware_frozen.yaml`. Diventano definitivi con il tag `hw-freeze`.
+
 ## 9. Decisioni prese e deviazioni dalle issue
 
 - Un'unica `embed()` in `quantum/embed.py` invece di tre file in `backends/`: il circuito è lo stesso, cambia solo
@@ -138,7 +154,6 @@ python scripts/qpu_campaign.py [--submit]                      # H-02, dopo il t
 
 ## 10. Cosa manca
 
-1. Merge dei dati (D-02, D-03 con la correzione `central_freq`, D-04, D-05) e download dei dati Gravity Spy.
-2. E-01 sui dati veri → scelta di (n, L, s).
-3. L-05: `configs/hardware_frozen.yaml`, `docs/decisions.md`, tag `hw-freeze`.
+1. Merge dei dati (D-02, D-03 con la correzione `central_freq`, D-04, D-05).
+2. Approvazione di L-05 e tag `hw-freeze`; poi D-05 lega i sottoinsiemi al tag (`python -m data.hardware_subsets --bind-freeze-from .`).
 4. H-02 su IBM, poi E-05 (diagnostiche hardware, con G-03) ed E-04 (modelli sui kernel hardware).
