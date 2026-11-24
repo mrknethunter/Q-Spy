@@ -1,4 +1,11 @@
-pandas
-numpy
-scikit-learn
-pytest
+# Pinned to the versions every test and result in this repository was produced with (I-01).
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+matplotlib==3.10.9
+PyYAML==6.0.3
+qiskit==2.6.2
+qiskit-aer==0.17.2
+qiskit-ibm-runtime==0.52.1
+qiskit-machine-learning==0.9.1
+pytest==9.2.0

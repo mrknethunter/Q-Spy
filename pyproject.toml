@@ -1,3 +1,5 @@
 [tool.pytest.ini_options]
 # Top-level directories (data, features, quantum, ...) are imported as packages from the repo root.
 pythonpath = ["."]
+# Q-Spy-D01/ holds a stale nested copy of D-01 whose tests cannot import; it is removed in the final cleanup.
+testpaths = ["tests", "data/tests"]
