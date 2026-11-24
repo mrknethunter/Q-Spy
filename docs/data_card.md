@@ -1,5 +1,7 @@
 # Gravity Spy raw data card (D-01)
 
+Per la provenienza, il significato dei campi e la riproduzione di `curation_summary.json`, vedere [Origine del report di curation (D-02)](#origine-del-report-di-curation-d-02).
+
 ## Scope and provenance
 
 Pinned release: [Zenodo 5649212, v1.0.0](https://zenodo.org/records/5649212), DOI [10.5281/zenodo.5649212](https://doi.org/10.5281/zenodo.5649212). Published in 2021; companion paper: Glanzer et al. (2023). These are tabular machine-learning classifications and Omicron metadata, not detector strain time series, volunteer votes, or downloaded spectrogram images. H1 = LIGO Hanford; L1 = LIGO Livingston. O3 is split into O3a and O3b.
@@ -335,3 +337,161 @@ The seven-feature selection remains provisional as documented in D-01. No featur
 Reproduce: python -m data.curate. Customize with --confidence, --known-classes, --coincidence-window, --max-per-class, --seed and --keep-extreme-q. Source names, MD5s, sizes, configuration and detector/run counts are retained in docs/curation_summary.json.
 The L-02 implementation and its actual shared tests were absent from the supplied branch. Local contract tests cover the interface supplied in the issue; compatibility with the merged L-02 suite still needs verification.
 <!-- END D-02 CURATION -->
+
+## Origine del report di curation (D-02)
+
+Questa sezione documenta il report [curation_summary.json](curation_summary.json)
+presente nella proposta D-02. Il file contiene **conteggi della curation sui dati
+reali della release D-01**, non risultati di un modello addestrato dal progetto e
+non conteggi delle fixture sintetiche dei test. Il nome del file nel repository
+è `curation_summary.json`.
+
+### Da quali dati proviene
+
+La sorgente è la release Gravity Spy fissata dal
+[manifest D-01](../data/manifest.json): DOI
+[10.5281/zenodo.5649212](https://doi.org/10.5281/zenodo.5649212), versione
+`v1.0.0`. Si tratta delle classificazioni ML e dei parametri tabellari Omicron;
+questa procedura non scarica le serie temporali del segnale o le immagini.
+
+I dati in ingresso sono tutti gli otto CSV `H1_O1.csv`, `H1_O2.csv`,
+`H1_O3a.csv`, `H1_O3b.csv`, `L1_O1.csv`, `L1_O2.csv`, `L1_O3a.csv`,
+`L1_O3b.csv`. H1 identifica Hanford, L1 Livingston; O1, O2, O3a e O3b
+identificano i periodi osservativi. I conteggi grezzi per file, le dimensioni
+e gli MD5 sono riportati nella sezione D-01 di questa scheda.
+
+Gli otto file contengono complessivamente **676.613 righe grezze**. Il downloader
+[data/download.py](../data/download.py) li salva normalmente in `data/raw/` e
+verifica dimensioni e MD5 rispetto al manifest. Anche `load_curated()` rifiuta
+file mancanti o non corrispondenti prima di leggerli. Questi controlli verificano
+la corrispondenza con la release fissata, non la correttezza scientifica delle
+etichette. `ml_label` e `ml_confidence` restano predizioni del classificatore
+distribuite dalla sorgente, non etichette certificate o nuove predizioni del
+progetto.
+
+### Come viene prodotto il JSON
+
+Il generatore è [data/curate.py](../data/curate.py):
+
+1. `load_curated()` verifica e concatena gli otto CSV; il periodo `run` è ricavato
+   dal nome del file e il campo `ifo` deve concordare con il detector del file.
+2. `curate_frame()` applica filtri, deduplicazione, selezione delle classi ed
+   eventuale campionamento, aggiornando i contatori nell'ordine descritto sotto.
+3. Il report è conservato in `DataFrame.attrs["curation"]`. `load_curated()`
+   aggiunge la sezione `source` con DOI, versione e identificativi dei file.
+4. Il comando `python -m data.curate` chiama `write_outputs()`, che scrive
+   `data/curated/curated.csv`, `docs/curation_summary.json` e il blocco generato
+   D-02 di questa scheda. La sola chiamata Python a `load_curated()` non scrive
+   file e non avvia un download.
+
+La validazione originaria del report è documentata in
+[validation_d02.md](validation_d02.md), con esecuzione del 21 novembre 2026 su
+Linux, Python 3.12.14, pandas 2.2.3 e NumPy 2.3.5. In quella verifica i percorsi
+raw e CSV di output erano esplicitamente indirizzati alla copia D-01 già
+disponibile e a una directory di verifica; i parametri di selezione erano quelli
+predefiniti. Non vengono inventati un commit di generazione o un timestamp:
+questi metadati non sono registrati nel JSON. Il 24 novembre 2026 il report è
+stato rigenerato localmente dagli otto originali verificati ed è risultato
+uguale, campo per campo, al JSON della proposta.
+
+### Configurazione effettiva di questa esecuzione
+
+| Campo in `config` | Valore | Effetto |
+| --- | --- | --- |
+| `confidence_threshold` | `0.9` | Conserva `ml_confidence` nell'intervallo inclusivo [0,9; 1]; esclude valori mancanti, non numerici o fuori intervallo |
+| `known_classes` | Blip, Extremely_Loud, Koi_Fish, Low_Frequency_Burst, Low_Frequency_Lines, Scattered_Light, Tomte | Sette classi note; la motivazione della scelta è nella sezione D-02 precedente |
+| `coincidence_window_s` | `0.1` | Deduplicazione temporale separata per detector, su nanosecondi interi |
+| `max_per_class` | `null` | Nessun limite di numerosità per classe e nessun campionamento di riduzione |
+| `seed` | `42` | Seme del campionamento opzionale; con limite `null` non modifica le righe selezionate |
+| `drop_extreme_q` | `true` | Esclude esattamente `q_value == 1e20`, scelta conservativa esplicita; la sorgente non ne stabilisce qui il significato di sentinel |
+
+`Fast_Scattering` è aggiunta separatamente alle sette classi note come famiglia
+held-out e ammessa soltanto nei file O3a/O3b. Le sue righe restano nel CSV con
+`is_held_out=True`: non vengono automaticamente assegnate al test. La loro
+esclusione dall'addestramento novelty e le partizioni train/validation/test
+appartengono ai protocolli di split, non a questo report.
+
+### Da 676.613 righe grezze a 318.801 righe curate
+
+`removed` registra **esclusioni sequenziali**: ogni riga eliminata è attribuita
+al primo passaggio che la esclude. I valori non sono conteggi indipendenti di
+tutti i possibili difetti presenti nei CSV.
+
+| Ordine | Chiave in `removed` | Significato | Eliminate | Rimaste |
+| --- | --- | --- | ---: | ---: |
+| Ingresso | — | Tutte le righe degli otto CSV | — | 676.613 |
+| 1 | `confidence_below_threshold_or_invalid` | Confidenza non valida o non nell'intervallo inclusivo [0,9; 1] | 183.146 | 493.467 |
+| 2 | `held_out_outside_o3` | Fast_Scattering al di fuori di O3a/O3b | 0 | 493.467 |
+| 3 | `invalid_id_label_time_or_feature` | ID/label mancanti, feature non finite o non positive, timestamp non validi | 0 | 493.467 |
+| 4 | `q_value_equals_1e20` | Q estremo escluso dalla configurazione | 34.368 | 459.099 |
+| 5 | `repeated_id` | Ripetizioni dell'ID costruito come `ifo:gravityspy_id` | 1 | 459.098 |
+| 6 | `coincident_trigger` | Rappresentanti ulteriori dello stesso cluster temporale nel medesimo detector | 47.445 | 411.653 |
+| 7 | `unselected_class` | Classi diverse dalle sette note e dalla famiglia held-out | 92.852 | 318.801 |
+| 8 | `stratified_cap` | Riduzione per limite opzionale di classe, disattivato in questa esecuzione | 0 | 318.801 |
+
+Il controllo contabile è:
+
+```text
+676613 - (183146 + 0 + 0 + 34368 + 1 + 47445 + 92852 + 0) = 318801
+```
+
+Per esempio, D-01 osserva **50.792** valori Q uguali a `1e20` nei dati grezzi;
+le **34.368** esclusioni Q di D-02 riguardano solo le righe ancora presenti dopo
+il filtro di confidenza e gli altri passaggi precedenti. Non è una discrepanza
+fra i due report. Un contatore zero significa che quel passaggio non ha rimosso
+righe superstiti in questa esecuzione, non che il controllo sia assente.
+
+La deduplicazione temporale è indipendente dalle etichette e dai confini fra
+periodi osservativi, ma separata fra H1 e L1. Due picchi consecutivi nello stesso
+detector con distanza minore o uguale a 100.000.000 ns appartengono allo stesso
+cluster, comprese le catene transitive. Il rappresentante massimizza prima la
+confidenza e poi SNR; ID, tempo esatto, run, label e feature risolvono i pareggi
+in modo deterministico. Osservazioni contemporanee in H1 e L1 non sono fuse.
+
+### Dizionario degli altri campi
+
+| Campo | Contenuto e interpretazione |
+| --- | --- |
+| `input_rows` / `output_rows` | Numero di righe prima della curation e numero finale: 676.613 e 318.801; non sono dimensioni di train/test |
+| `eligible_counts_after_dedup` | Conteggi per tutte le classi sopravvissute fino alla deduplicazione, prima di scegliere le classi del progetto; la somma è 411.653 |
+| `known_classes` / `held_out` | Ruoli delle sette classi note e della famiglia Fast_Scattering, non risultati di un algoritmo di clustering |
+| `counts_before_cap` | Conteggi `classe -> detector -> righe` dopo la selezione delle classi, prima dell'eventuale limite |
+| `counts_by_detector` | Conteggi finali `classe -> detector -> righe`; coincidono con `counts_before_cap` perché `max_per_class` è `null` |
+| `counts_by_run` | Conteggi finali `run -> classe -> detector -> righe`; aggregando i run si ottengono i conteggi finali per detector |
+| `feature_columns` | Ordine delle sette colonne numeriche raw: duration, peak_frequency, central_freq, bandwidth, amplitude, snr, q_value; non sono ancora normalizzate |
+| `feature_selection_status` | `provisional_in_D01`: conserva l'indicazione di selezione provvisoria delle feature nella proposta D-01, senza dichiarare approvazione del gruppo |
+| `coincidence_window_ns` | Finestra di configurazione convertita in interi: 100.000.000 ns, equivalente a 0,1 s |
+| `source` | DOI e versione della release; per ogni CSV, nome, dimensione in byte e MD5 fissati dal manifest; non contiene i dati raw o le predizioni dei modelli del progetto |
+
+La somma di `counts_by_detector` è **318.801**: **128.350 H1** e **190.451 L1**.
+Il dettaglio classe/detector e classe/run/detector è nelle tabelle D-02 sopra.
+Fast_Scattering conta **56.509 righe**, delle quali **21.904 in O3a** e **34.605
+in O3b**, e zero in O1/O2. Le classi e i detector non sono resi artificialmente
+equipopolati: la stratificazione qui preserva il supporto dei detector e, se
+si abilita un limite, campiona all'interno di ciascuna coppia classe/detector.
+
+### Riprodurre il report
+
+Dalla radice del repository, con le dipendenze NumPy e pandas disponibili:
+
+```powershell
+python -m pip install -r requirements.txt
+python data/download.py
+python data/download.py --verify-only
+python -m data.curate --confidence 0.9 --coincidence-window 0.1 --seed 42
+```
+
+Il comando usa le sette classi predefinite e, omettendo `--max-per-class` e
+`--keep-extreme-q`, mantiene rispettivamente limite `null` ed esclusione Q
+attiva. Il downloader riutilizza i CSV locali validi. Per confrontare senza
+sovrascrivere il report versionato si può eseguire:
+
+```powershell
+python -m data.curate --confidence 0.9 --coincidence-window 0.1 --seed 42 --output-dir data/curated --report data/curated/curation_summary_reproduced.json --data-card data/curated/data_card_reproduced.md
+```
+
+Va confrontato il contenuto JSON con `docs/curation_summary.json`, usando gli
+stessi originali, codice e configurazione. Modificare soglia, classi, finestra,
+limite o trattamento Q produce legittimamente un report diverso. Il report
+non misura accuratezza, prestazioni quantistiche o indipendenza statistica
+dei futuri split; queste valutazioni richiedono le rispettive fasi successive.
