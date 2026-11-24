@@ -1,4 +1,4 @@
-"""Embed a few points on every tier and compare each with the exact result; results go to results/pilot/.
+"""Embed a few points on every tier, compare each with the exact result, store every tier (store/runs/<run_id>-<tier>).
 
     python scripts/qpu_pilot.py             dry run: L0, L1, L2 locally + estimated QPU seconds
     python scripts/qpu_pilot.py --submit    real IBM run (needs "QPU approved", docs/qpu_policy.md)
@@ -15,6 +15,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # allow `python scripts/qpu_pilot.py`
 from quantum.embed import DEFAULT_DEVICE, EmbedConfig, embed  # noqa: E402
+from store.io import write_bloch  # noqa: E402
 from tests.fixtures.synthetic import synthetic_curated, synthetic_features  # noqa: E402
 
 
@@ -23,24 +24,30 @@ def _compare(B, ref):
 
 
 def run_pilot(points=10, qubits=8, layers=2, s=1.0, precision=0.03, submit=False, device=DEFAULT_DEVICE,
-              seed=7, out_dir="results/pilot"):
-    X = synthetic_features(synthetic_curated(seed=seed))  # shortcut: synthetic until D-02/D-03 are in main
-    X = X[np.random.default_rng(seed).choice(len(X), points, replace=False)]
+              seed=7, out_dir="results/pilot", store_root=None):
+    df = synthetic_curated(seed=seed)  # shortcut: synthetic until D-02/D-03 are in main
+    rows = np.random.default_rng(seed).choice(len(df), points, replace=False)
+    ids, X = df["id"].to_numpy()[rows], synthetic_features(df)[rows]
     cfg = EmbedConfig(qubits, layers, s)
-    B = {"L0": embed(X, cfg, "L0").B}
+    res = {"L0": embed(X, cfg, "L0")}
     for tier in ("L1", "L2"):
-        B[tier] = embed(X, cfg, tier, precision=precision, seed=seed).B
+        res[tier] = embed(X, cfg, tier, precision=precision, seed=seed)
     hw = embed(X, cfg, "HW", precision=precision, seed=seed, submit=submit, device=device)
     if hw.B is not None:
-        B["HW"] = hw.B
+        res["HW"] = hw
     run_id = ("hw-" if submit else "dry-") + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    for tier, r in res.items():
+        write_bloch(f"{run_id}-{tier}", ids, r.B, r.meta, root=store_root)
+    B0 = res["L0"].B
     summary = {"run_id": run_id, "embed_config": hw.meta["embed_config"], "points": points, "precision": precision,
-               "hw": hw.meta, "vs_L0": {t: _compare(b, B["L0"]) for t, b in B.items() if t != "L0"}}
-    if "HW" in B:
-        summary["HW_vs_L2"] = _compare(B["HW"], B["L2"])  # does the emulator predict the hardware noise?
+               "hw": hw.meta, "vs_L0": {t: _compare(r.B, B0) for t, r in res.items() if t != "L0"}}
+    if "HW" in res:
+        summary["HW_vs_L2"] = _compare(res["HW"].B, res["L2"].B)  # does the emulator predict the hardware noise?
+        m = hw.meta
+        summary["ledger_row"] = (f"| {datetime.now(timezone.utc):%Y-%m-%d} | H-01 | | {m['backend_name']} | pilot, {points} points, "
+                                 f"{qubits} qubits, L={layers} | {m['estimated_qpu_s']:.1f} | {m['usage_s']} | {', '.join(m['job_ids'])} |")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    np.savez(out / f"{run_id}.npz", X=X, **B)
     (out / f"{run_id}.json").write_text(json.dumps(summary, indent=2, default=str))
     return summary
 

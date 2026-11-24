@@ -67,6 +67,8 @@ store.io.read_bloch(run_id: str, root=None) -> tuple[list[str], np.ndarray, dict
 ```
 Round trip is exact (ids order, values, meta). Writing an existing `run_id` whose `meta["tier"] == "HW"`
 raises `FileExistsError`. `root=None` means `store/runs/`. G-03 `compare_runs` consumes this tuple.
+On disk a run is `store/runs/<run_id>/` with `B.npy`, `ids.json` and `meta.json`; `write_bloch` adds `created_at` and
+`git_commit` to `meta`. Runs whose id starts with `hw-` are committed to git, all others are ignored.
 
 ## Kernels (M-01)
 

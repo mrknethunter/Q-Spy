@@ -20,7 +20,8 @@ Code that can reach a QPU defaults to a dry run and submits only with an explici
 1. Run the dry run and post in the issue: backend, circuits, shots, executions, **estimated QPU seconds**.
    Estimate: `1.3 x (2 s x sub-jobs + 0.35 ms x circuits x shots)`.
 2. The lead replies `QPU approved: <seconds>` in the issue. Nothing is submitted before that comment.
-3. Submit, then record the measured `job.usage()` in the ledger below (same PR as the results).
+3. Submit, then paste the `ledger_row` printed by `scripts/qpu_pilot.py` (measured `job.usage()` included) into the
+   ledger below, in the same PR as the `store/runs/hw-*` results.
 
 ## Rules
 
