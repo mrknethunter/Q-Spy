@@ -4,9 +4,19 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.preprocessing import RobustScaler
-
 from features.transforms import FEATURE_COLUMNS, make_features
+from tests.fixtures.synthetic import synthetic_curated
 
+def test_make_features_on_synthetic_fixture() -> None:
+    df = synthetic_curated()
+
+    X_tilde, _ = make_features(df)
+
+    assert X_tilde.shape == (len(df), 7)
+    assert X_tilde.dtype == np.float64
+    assert np.isfinite(X_tilde).all()
+    assert np.all(X_tilde >= -1.0)
+    assert np.all(X_tilde <= 1.0)
 
 def make_frame(rows: int, *, offset: float = 0.0) -> pd.DataFrame:
     values = np.arange(1, rows + 1, dtype=np.float64)[:, None] + offset

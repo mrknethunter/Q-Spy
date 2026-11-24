@@ -10,7 +10,7 @@ from sklearn.preprocessing import RobustScaler
 FEATURE_COLUMNS: tuple[str, ...] = (
     "snr",
     "peak_frequency",
-    "central_frequency",
+    "central_freq",
     "bandwidth",
     "duration",
     "q_value",
