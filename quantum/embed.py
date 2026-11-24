@@ -28,18 +28,22 @@ class EmbedResult:
     meta: dict = field(default_factory=dict)
 
 
+def circuit_and_angles(X_tilde: np.ndarray, cfg: EmbedConfig):
+    X_tilde = np.asarray(X_tilde, dtype=np.float64)
+    qc = feature_map(cfg.n_qubits, cfg.layers, X_tilde.shape[1], cfg.entangle)
+    return qc, cfg.s * np.pi * X_tilde[:, : qc.num_parameters]
+
+
 def estimate_usage(n_circuits: int, shots: int, n_subjobs: int = 1) -> float:
-    """IBM's documented estimate (2 s per sub-job + 0.35 ms per execution) with a 30% margin."""
+    # IBM's documented estimate (2 s per sub-job + 0.35 ms per execution) with a 30% margin
     return 1.3 * (2.0 * n_subjobs + 0.35e-3 * n_circuits * shots)
 
 
 def embed(X_tilde: np.ndarray, cfg: EmbedConfig, backend: str = "L0", *, precision: float = 0.03,
           seed: int | None = None, submit: bool = False, device=DEFAULT_DEVICE) -> EmbedResult:
-    X_tilde = np.asarray(X_tilde, dtype=np.float64)
     n = cfg.n_qubits
-    qc = feature_map(n, cfg.layers, X_tilde.shape[1], cfg.entangle)
-    angles = cfg.s * np.pi * X_tilde[:, : qc.num_parameters]
-    meta = {"tier": backend, "embed_config": asdict(cfg), "n_points": len(X_tilde)}
+    qc, angles = circuit_and_angles(X_tilde, cfg)
+    meta = {"tier": backend, "embed_config": asdict(cfg), "n_points": len(angles)}
 
     if backend == "L0":
         # exact (no sampling) and ~70x faster than StatevectorEstimator
@@ -105,7 +109,7 @@ def _compile(qc, device, seed, meta):
 
 
 def _calibration(device, layout):
-    """Calibration of the physical qubits and couplers this job uses, as reported at submission."""
+    # only the qubits and couplers this job uses: the full device calibration is ~1 MB
     t = device.target
     qubits = {}
     for q in layout:
