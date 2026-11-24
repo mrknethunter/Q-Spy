@@ -67,7 +67,8 @@ def plot(res: pd.DataFrame, path):
     s_ref = res["s"].iloc[(res["s"] - 1.0).abs().argmin()]
     n_ref = res.loc[res["kernel"] == "fidelity", "n"].max()
     L_ref = 2 if 2 in set(res["L"]) else res["L"].min()
-    fig, ax = plt.subplots(1, 3, figsize=(15, 4.2))
+    n_kta = 8 if 8 in set(res["n"]) else res["n"].min()
+    fig, ax = plt.subplots(1, 4, figsize=(20, 4.2))
     for kern, c in colors.items():
         for L, style in zip(sorted(res["L"].unique()), ["-", "--", ":", "-."]):
             d = res[(res["kernel"] == kern) & (res["L"] == L) & (res["s"] == s_ref)].sort_values("n")
@@ -75,11 +76,15 @@ def plot(res: pd.DataFrame, path):
             ax[2].plot(d["n"], d["kta"], style, color=c, marker="o", ms=3)
         d = res[(res["kernel"] == kern) & (res["L"] == L_ref) & (res["n"] == n_ref)].sort_values("s")
         ax[1].plot(d["s"], d["var_offdiag"], color=c, marker="o", ms=3, label=kern)
+        d = res[(res["kernel"] == kern) & (res["L"] == L_ref) & (res["n"] == n_kta)].sort_values("s")
+        ax[3].plot(d["s"], d["kta"], color=c, marker="o", ms=3, label=kern)
     ax[0].set(yscale="log", xlabel="qubits n", ylabel="Var of off-diagonal k", title=f"(a) concentration vs n, s={s_ref}")
     ax[1].set(xscale="log", yscale="log", xlabel="bandwidth s", title=f"(b) vs bandwidth, n={n_ref}, L={L_ref}")
     ax[2].set(xlabel="qubits n", ylabel="kernel-target alignment", title=f"(c) label alignment, s={s_ref}")
+    ax[3].set(xscale="log", xlabel="bandwidth s", ylabel="kernel-target alignment", title=f"(d) label alignment vs bandwidth, n={n_kta}, L={L_ref}")
     ax[0].legend(fontsize=7, ncol=2)
     ax[1].legend(fontsize=8)
+    ax[3].legend(fontsize=8)
     for a in ax:
         a.grid(alpha=0.3)
     fig.tight_layout()
