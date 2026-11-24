@@ -14,7 +14,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 FloatArray = NDArray[np.float64]
-BlochArray = NDArray[np.float32]
+BlochArray = NDArray[np.float64]
 BlochResult = tuple[ArrayLike, ArrayLike, Mapping[str, Any]]
 KernelResult = tuple[ArrayLike, ArrayLike]
 
@@ -98,13 +98,18 @@ def _indices_in_reference_order(
 
 
 def _as_bloch(B: ArrayLike, *, name: str) -> BlochArray:
-    """Validate and preserve an L-02 float32 Bloch array."""
+    """Validate an L-02 float array and normalize it to float64."""
     try:
         raw = np.asarray(B)
     except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"{name} must be a numeric array.") from exc
-    if np.iscomplexobj(raw) or raw.dtype != np.dtype(np.float32):
-        raise ValueError(f"{name} must contain real float32 values per L-02.")
+    if np.iscomplexobj(raw) or raw.dtype not in (
+        np.dtype(np.float32),
+        np.dtype(np.float64),
+    ):
+        raise ValueError(
+            f"{name} must contain real float32 or float64 values per L-02."
+        )
     if raw.ndim != 3:
         raise ValueError(f"{name} must have shape (N, n_qubits, 3).")
     if raw.shape[0] == 0 or raw.shape[1] == 0 or raw.shape[2] != 3:
@@ -113,7 +118,7 @@ def _as_bloch(B: ArrayLike, *, name: str) -> BlochArray:
         raise ValueError(f"{name} contains NaN or infinite values.")
     if np.any(raw < -1.0) or np.any(raw > 1.0):
         raise ValueError(f"{name} values must be in [-1, 1] per L-02.")
-    return raw
+    return np.asarray(raw, dtype=np.float64)
 
 
 def _as_kernel(K: ArrayLike, *, name: str) -> FloatArray:
@@ -186,7 +191,9 @@ def bloch_frobenius_error(
 ) -> dict[str, Any]:
     """Compare two L-02 Bloch arrays after matching their sample IDs.
 
-    ``B_a`` and ``B_b`` must be float32 arrays shaped ``(N, n_qubits, 3)``.
+    ``B_a`` and ``B_b`` must be float32 or float64 arrays shaped
+    ``(N, n_qubits, 3)``. Valid inputs are normalized to float64 for the
+    comparison metrics.
     If the ID sequences contain the same IDs in different orders, rows of
     ``B_b`` are explicitly reordered to the order in ``ids_a``.
 

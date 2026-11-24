@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from diagnostics.compare import (
+    _as_bloch,
     bloch_frobenius_error,
     compare_runs,
     drift_report,
@@ -25,6 +26,42 @@ def _centered_test_kernels():
         [[1.0, 0.0, -1.0], [0.0, -1.0, 1.0], [-1.0, 1.0, 0.0]]
     )
     return ones + H, ones + C
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_bloch_validation_accepts_l02_float_dtypes(dtype):
+    ids = ["a", "b", "c"]
+    B = np.zeros((3, 2, 3), dtype=dtype)
+
+    result = bloch_frobenius_error(ids, B, ids, B.copy())
+
+    assert result["rmse_global"] == 0.0
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_validated_bloch_arrays_use_float64_without_mutating_inputs(dtype):
+    original = np.zeros((3, 2, 3), dtype=dtype)
+    original[:, 0, 0] = 0.5
+    expected = original.copy()
+
+    validated = _as_bloch(original, name="B")
+
+    assert validated.dtype == np.float64
+    assert original.dtype == dtype
+    np.testing.assert_array_equal(original, expected)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [np.int64, np.bool_, np.complex128, np.float16, np.str_],
+    ids=["integer", "boolean", "complex", "other-float", "nonnumeric"],
+)
+def test_bloch_validation_rejects_unsupported_dtypes(dtype):
+    ids = ["a", "b", "c"]
+    B = np.zeros((3, 2, 3), dtype=dtype)
+
+    with pytest.raises(ValueError, match="float32 or float64"):
+        bloch_frobenius_error(ids, B, ids, _bloch())
 
 
 def test_identical_bloch_arrays_have_zero_error():
@@ -53,6 +90,67 @@ def test_deterministic_perturbation_matches_analytic_metrics():
     assert result["frobenius_global"] == pytest.approx(
         np.sqrt(4 * 3 * (0.25**2 + 0.5**2))
     )
+
+
+def test_bloch_frobenius_error_supports_float64_with_analytic_metrics():
+    ids = ["a", "b", "c"]
+    ideal = np.zeros((3, 2, 3), dtype=np.float64)
+    perturbed = ideal.copy()
+    perturbed[:, 0, :] += 0.25
+    perturbed[:, 1, :] -= 0.5
+
+    result = bloch_frobenius_error(ids, ideal, ids, perturbed)
+
+    assert result["rmse_per_qubit"] == pytest.approx([0.25, 0.5])
+    assert result["rmse_global"] == pytest.approx(
+        np.sqrt((0.25**2 + 0.5**2) / 2)
+    )
+    assert result["frobenius_global"] == pytest.approx(
+        np.sqrt(3 * 3 * (0.25**2 + 0.5**2))
+    )
+
+
+def test_compare_runs_accepts_float64_bloch_vectors():
+    ids = ["a", "b", "c"]
+    ideal = np.zeros((3, 2, 3), dtype=np.float64)
+    hardware = ideal.copy()
+    hardware[:, 1, :] = 0.3
+
+    report = compare_runs(
+        (ids, ideal, {"run_id": "ideal"}),
+        (ids, hardware, {"run_id": "hardware"}),
+        tier_a="L0",
+        tier_b="HW",
+    )
+
+    assert report["comparison_type"] == "tier"
+    assert report["bloch_vector_error"]["rmse_per_qubit"] == pytest.approx(
+        [0.0, 0.3]
+    )
+    assert report["bloch_vector_error"]["rmse_global"] == pytest.approx(
+        0.3 / np.sqrt(2)
+    )
+    json.dumps(report, allow_nan=False)
+
+
+def test_drift_report_accepts_float64_bloch_vectors_and_measures_drift():
+    ids = ["a", "b", "c"]
+    start_B = np.zeros((3, 2, 3), dtype=np.float64)
+    end_B = start_B.copy()
+    end_B[:, 0, :] = 0.25
+
+    report = drift_report(
+        (ids, start_B, {"run_id": "start"}),
+        (ids, end_B, {"run_id": "end"}),
+    )
+
+    assert report["reference_ids"] == ids
+    assert report["bloch_drift"]["rmse_per_qubit"] == pytest.approx([0.25, 0.0])
+    assert report["bloch_drift"]["rmse_global"] == pytest.approx(
+        0.25 / np.sqrt(2)
+    )
+    assert report["bloch_drift"]["frobenius_global"] == pytest.approx(0.25 * 3)
+    json.dumps(report, allow_nan=False)
 
 
 def test_noise_on_one_qubit_is_attributed_to_that_qubit():

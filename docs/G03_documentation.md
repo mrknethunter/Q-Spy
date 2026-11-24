@@ -9,7 +9,7 @@ NumPy. Non legge lo store, non importa `store.io`, non esegue circuiti e non
 costruisce il projected kernel.
 
 L'interfaccia esterna dei risultati Bloch segue la forma L-02
-`read_bloch(run_id) -> (ids, B, meta)`: `B` è `float32`, con forma
+`read_bloch(run_id) -> (ids, B, meta)`: `B` è `float32` o `float64`, con forma
 `(N, n_qubits, 3)` e valori in `[-1, 1]`. I kernel vengono passati già calcolati
 insieme agli ID che ne definiscono righe e colonne.
 
@@ -114,7 +114,7 @@ valori in giudizi di accettabilità.
 vanno fornite insieme; i loro ID devono corrispondere agli ID dei rispettivi
 risultati Bloch.
 
-Quando gli ID hanno lo stesso insieme ma un ordinamento diverso, le righe di
+I due insiemi di ID devono coincidere. Se l'ordinamento è diverso, le righe di
 `B_b` vengono riallineate esplicitamente e per le matrici vengono riordinate
 righe e colonne secondo `ids_a`. Il report elenca gli ID nell'ordine di
 riferimento A (o start). Gli ID devono essere univoci e serializzabili in JSON.
@@ -169,7 +169,10 @@ drift = drift_report(
 ## Validazioni, dipendenze e limiti
 
 - Dipendenza effettiva: NumPy; pytest serve solo per i test.
-- `B` deve rispettare forma, dtype `float32`, finitezza e intervallo L-02.
+- `B` deve rispettare forma, dtype `float32` o `float64`, finitezza e intervallo
+  L-02.
+- Dopo la validazione, i Bloch vector sono rappresentati come `float64` per il
+  calcolo delle metriche; gli array ricevuti dal chiamante restano invariati.
 - ID duplicati, mancanti, incompatibili o con cardinalità diversa sono errori.
 - Le matrici kernel devono essere reali, quadrate, finite e simmetriche entro
   tolleranza numerica (`rtol=1e-7`, `atol=1e-10`). Non viene verificata la
@@ -178,10 +181,8 @@ drift = drift_report(
 - Il modulo non persiste risultati, non carica filesystem o Parquet e non
   dipende da Qiskit, backend o `store.io`.
 
-Nel checkout consultato manca `docs/contracts.md`, indicato come deliverable
-L-02. Per questa implementazione è stato consultato il testo L-02 esportato in
-`tasks/L/L-02.md`, che dichiara le forme, il dtype e l'intervallo adottati qui.
-La mancanza è riportata senza sostituire il documento con un'ipotesi.
+Il contratto L-02 effettivo è documentato in `docs/contracts.md`; specifica
+`float32` o `float64` per `B`, in accordo con la validazione di questo modulo.
 
 ## Test
 
