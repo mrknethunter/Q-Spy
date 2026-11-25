@@ -1,0 +1,53 @@
+\section{Ogni numero e da dove viene}
+\label{app:numeri}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X r >{\raggedright\arraybackslash}p{6.2cm}@{}}
+\toprule
+Numero & Valore & Fonte (script e run)\\
+\midrule
+glitch curati, 8 famiglie & 318.801 & \texttt{data/curate.py}, D-02\\
+Fast Scattering (di cui su L1) & 56.509 (55.229) & \texttt{docs/E03\_results.md}\\
+KTA proiettato, $s=0{,}1778$ / $s=1$ & 0,534 / 0,357 & \texttt{results/e01/e01\_gravityspy.csv}\\
+KTA fidelity, $n=8$ & 0,557 & idem\\
+KTA L0/L1/L2 sui 120 main & 0,531 / 0,532 / 0,530 & \texttt{results/q06/q06\_main.csv}\\
+pilota: QPU misurati / formula & 13\,s / 13,7\,s & \texttt{hw-20261124T005515Z}, \texttt{docs/qpu\_policy.md}\\
+pilota: errore HW / L1 & 0,033 / 0,030 & idem\\
+campagna: QPU misurati / stima & 276\,s / 413\,s & \texttt{hw-20261125T124523Z}, \texttt{results/campaign/}\\
+errore main con / senza mitigazione & 0,030 / 0,039 & \texttt{results/h02/h02\_experiments.csv}\\
+KTA main esatto / L2 / HW / ripetizione & 0,531 / 0,530 / 0,525 / 0,528 & \texttt{results/h02/}, ripetizione \texttt{hw-20261125T113624Z}\\
+H4: $\Delta$KTA [IC 95\%] & $-0{,}006$ $[-0{,}010;\,-0{,}001]$ & \texttt{results/h02/h02\_summary.json}\\
+deriva / ripetizione & 0,034 / 0,039 & idem\\
+AUROC FS sui 120: esatto / HW / RBF & 0,954 / 0,957 / 0,951 & idem (anteprima E-04)\\
+few-shot macro-F1, $k=50$, proiettato / RBF & 0,838 / 0,838 & \texttt{results/e2e/fewshot\_sweep.csv} (L-04)\\
+E-03 AUROC FS: proiettato / RBF / IF / LOF & 0,932 / 0,957 / 0,941 / 0,947 & branch E-03, \texttt{results/e03/e03\_metrics.csv}\\
+E-03 differenza appaiata [IC 95\%] & $-0{,}026$ $[-0{,}044;\,-0{,}008]$ & branch E-03, \texttt{e03\_paired\_differences.csv}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Configurazione congelata} (\texttt{configs/hardware\_frozen.yaml}, tag \texttt{hw-freeze}): 8 qubit, 2 strati,
+$s=0{,}1778$, precisione 0,03 (1112 shot), \texttt{ibm\_kingston}, scaler P2 seed 0, concentrazione a 4/8/12 qubit.
+
+
+\section{Riferimenti}
+\begin{itemize}
+  \item S. Bahaadini et al., \emph{Machine learning for Gravity Spy: glitch classification and dataset}, Information
+  Sciences 444 (2018).
+  \item J. Bowles, S. Ahmed, M. Schuld, \emph{Better than classical? The subtle art of benchmarking quantum machine
+  learning models}, arXiv:2403.07059 (2024).
+  \item M. Cerezo et al., \emph{Does provable absence of barren plateaus imply classical simulability?},
+  arXiv:2312.09121 (2023).
+  \item J. Glanzer et al., \emph{Data quality up to the third observing run of Advanced LIGO: Gravity Spy glitch
+  classifications}, Class.\ Quantum Grav.\ 40 (2023).
+  \item V. Havlíček et al., \emph{Supervised learning with quantum-enhanced feature spaces}, Nature 567 (2019).
+  \item H.-Y. Huang et al., \emph{Power of data in quantum machine learning}, Nature Communications 12 (2021).
+  \item M. Schuld, N. Killoran, \emph{Quantum machine learning in feature Hilbert spaces}, Phys.\ Rev.\ Lett.\ 122 (2019).
+  \item S. Soni et al., \emph{Discovering features in gravitational-wave data through detector characterization,
+  citizen science and machine learning}, Class.\ Quantum Grav.\ 38 (2021).
+  \item S. Thanasilp et al., \emph{Exponential concentration in quantum kernel methods}, Nature Communications 15 (2024).
+  \item Y. Wu et al., \emph{Advancing glitch classification in Gravity Spy: multi-view fusion with attention-based machine
+  learning for Advanced LIGO’s fourth observing run}, arXiv:2401.12913 (2024).
+  \item M. Zevin et al., \emph{Gravity Spy: integrating Advanced LIGO detector characterization, machine learning, and
+  citizen science}, Class.\ Quantum Grav.\ 34 (2017).
+\end{itemize}
