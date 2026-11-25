@@ -11,6 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.svm import OneClassSVM
 from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve
+from sklearn.model_selection import KFold
 
 from models.base import BaseNoveltyModel
 
@@ -61,7 +62,6 @@ def projected_quantum_kernel_matrix(
     sq_dists = euclidean_distances(flat_a, flat_b, squared=True)
     return np.exp(-(float(gamma) / float(qubits_a)) * sq_dists)
 
-
 class _PrecomputedKernelOCSVM(BaseEstimator):
     """Scikit-learn compatible OneClassSVM(kernel='precomputed') wrapper."""
 
@@ -69,7 +69,7 @@ class _PrecomputedKernelOCSVM(BaseEstimator):
         self,
         nu: float = 0.05,
         gamma: float | str = "scale",
-        kernel: Literal["projected", "rbf"] = "projected",
+        kernel: Literal["projected", "precomputed", "rbf"] = "projected",
         n_qubits: int | None = None,
         kernel_fn: KernelFn | None = None,
     ) -> None:
@@ -122,42 +122,63 @@ class _PrecomputedKernelOCSVM(BaseEstimator):
             sq_dists = euclidean_distances(X_a, X_b, squared=True)
             return np.exp(-self.gamma_ * sq_dists)
 
-        raise ValueError(f"Unsupported kernel '{self.kernel}'. Expected 'projected' or 'rbf'.")
+        raise ValueError(
+            f"Unsupported kernel '{self.kernel}'. Expected 'projected', 'precomputed', or 'rbf'."
+        )
 
     def fit(self, X: np.ndarray, y: Any = None) -> _PrecomputedKernelOCSVM:
-        X_train, resolved_qubits = self._prepare_features(X)
-        self.X_train_ = X_train
-        self.resolved_qubits_ = resolved_qubits
-        self.gamma_ = self._resolve_gamma(self.X_train_, self.resolved_qubits_)
+        if self.kernel == "precomputed" and self.kernel_fn is None:
+            K_train = np.asarray(X, dtype=np.float64)
+            if K_train.ndim != 2 or K_train.shape[0] != K_train.shape[1]:
+                raise ValueError(
+                    f"Precomputed training kernel must be a square 2D matrix, got {K_train.shape}."
+                )
+            self.n_train_samples_ = int(K_train.shape[0])
+        else:
+            X_train, resolved_qubits = self._prepare_features(X)
+            self.X_train_ = X_train
+            self.resolved_qubits_ = resolved_qubits
+            self.gamma_ = self._resolve_gamma(self.X_train_, self.resolved_qubits_)
+            K_train = self._compute_gram(self.X_train_, self.X_train_)
 
-        K_train = self._compute_gram(self.X_train_, self.X_train_)
         self.ocsvm_ = OneClassSVM(kernel="precomputed", nu=float(self.nu))
         self.ocsvm_.fit(K_train)
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def _eval_gram(self, X: np.ndarray) -> np.ndarray:
+        if self.kernel == "precomputed" and self.kernel_fn is None:
+            K_eval = np.asarray(X, dtype=np.float64)
+            if K_eval.ndim != 2 or K_eval.shape[1] != self.n_train_samples_:
+                raise ValueError(
+                    f"Expected precomputed Gram matrix with {self.n_train_samples_} columns, "
+                    f"got {K_eval.shape}."
+                )
+            return K_eval
+
         X_eval, _ = self._prepare_features(X)
-        K_eval = self._compute_gram(X_eval, self.X_train_)
-        return self.ocsvm_.predict(K_eval)
+        return self._compute_gram(X_eval, self.X_train_)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.ocsvm_.predict(self._eval_gram(X))
 
     def decision_function(self, X: np.ndarray) -> np.ndarray:
-        X_eval, _ = self._prepare_features(X)
-        K_eval = self._compute_gram(X_eval, self.X_train_)
-        return self.ocsvm_.decision_function(K_eval)
+        return self.ocsvm_.decision_function(self._eval_gram(X))
 
 
 class NoveltyOCSVM(BaseNoveltyModel):
     """Primary Q-Spy novelty detector (M-03) with precomputed kernel and equal-budget tuning.
 
-    Trains strictly on known glitch families (`fit(X_known)`) and selects `(nu, gamma)`
-    on known-only inner validation splits to prevent any held-out class leakage.
+    Supports:
+    - `kernel="projected"`: Bloch vectors `(N, 3n)` or `(N, n, 3)` with post-hoc `gamma` tuning.
+    - `kernel="precomputed"`: externally computed Gram matrices (e.g., fidelity kernel `k_F`).
+    - `kernel="rbf"` or custom `kernel_fn`: tabular fixtures or product-map ablations.
     """
 
     model_name = "novelty_ocsvm"
 
     def __init__(
         self,
-        kernel: Literal["projected", "rbf"] = "projected",
+        kernel: Literal["projected", "precomputed", "rbf"] = "projected",
         n_qubits: int | None = None,
         kernel_fn: KernelFn | None = None,
         nu_grid: list[float] | None = None,
@@ -170,28 +191,93 @@ class NoveltyOCSVM(BaseNoveltyModel):
         self.kernel = kernel
         self.n_qubits = n_qubits
         self.kernel_fn = kernel_fn
-        self.nu_grid = nu_grid or [0.01, 0.05, 0.1, 0.15, 0.2]
-        self.gamma_grid = gamma_grid or ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0]
+        self.nu_grid = nu_grid
+        self.gamma_grid = gamma_grid
 
     def _param_grid(self) -> dict[str, list[Any]]:
+        if self.kernel == "precomputed" and self.kernel_fn is None:
+            nu_values = (
+                list(self.nu_grid)
+                if self.nu_grid is not None
+                else np.linspace(0.01, 0.30, num=max(self.budget, 30)).tolist()
+            )
+            return {"nu": nu_values}
+
+        nu_values = (
+            list(self.nu_grid)
+            if self.nu_grid is not None
+            else [0.01, 0.05, 0.1, 0.15, 0.2]
+        )
+        gamma_values = (
+            list(self.gamma_grid)
+            if self.gamma_grid is not None
+            else ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0]
+        )
         return {
-            "nu": list(self.nu_grid),
-            "gamma": list(self.gamma_grid),
+            "nu": nu_values,
+            "gamma": gamma_values,
         }
 
     def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
         return _PrecomputedKernelOCSVM(
             nu=params["nu"],
-            gamma=params["gamma"],
+            gamma=params.get("gamma", "scale"),
             kernel=self.kernel,
             n_qubits=self.n_qubits,
             kernel_fn=self.kernel_fn,
         )
+
+    def fit(self, X: np.ndarray, y: np.ndarray | None = None) -> NoveltyOCSVM:
+        if self.kernel != "precomputed" or self.kernel_fn is not None:
+            super().fit(X, y)
+            return self
+
+        K_arr = np.asarray(X, dtype=np.float64)
+        if K_arr.ndim != 2 or K_arr.shape[0] != K_arr.shape[1]:
+            raise ValueError(
+                f"Precomputed training kernel must be a square 2D matrix, got {K_arr.shape}."
+            )
+
+        configs = self._sample_configurations()
+        n_splits = self._resolve_novelty_n_splits(len(K_arr))
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
+        splits = list(kf.split(np.zeros(len(K_arr))))
+
+        best_score = -np.inf
+        best_params: dict[str, Any] = {}
+        self.cv_results_ = []
+
+        for params in configs:
+            fold_scores: list[float] = []
+            for train_idx, val_idx in splits:
+                est = self._build_estimator(params)
+                est.fit(K_arr[np.ix_(train_idx, train_idx)])
+                fold_scores.append(
+                    self._score_known_validation_fold(
+                        est, K_arr[np.ix_(val_idx, train_idx)], params
+                    )
+                )
+
+            mean_score = float(np.mean(fold_scores))
+            self.cv_results_.append({"params": params, "mean_calibration_score": mean_score})
+
+            if mean_score > best_score:
+                best_score = mean_score
+                best_params = params
+
+        self.n_configs_evaluated_ = len(configs)
+        self.best_params_ = dict(best_params)
+        self.best_cv_score_ = best_score
+
+        final_estimator = self._build_estimator(self.best_params_)
+        final_estimator.fit(K_arr)
+        self.best_estimator_ = final_estimator
+        return self
+
     def evaluate(self, X: np.ndarray, y: np.ndarray) -> dict[str, float]:
         """Score `X` and compute RQ4 novelty detection metrics against binary labels `y`."""
         scores = self.score_samples(X)
         return evaluate_novelty(y_true=y, anomaly_scores=scores)
-
 
 def evaluate_novelty(
     y_true: np.ndarray,
