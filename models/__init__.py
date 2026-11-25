@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Public model API for Q-Spy (M-02, M-03, M-04) consumed by the experiment runner."""
+"""Public model API for Q-Spy fewshot.py novelty.py baselines.py consumed by the experiment runner."""
 
 from models.base import (
     BaseBudgetedModel,
