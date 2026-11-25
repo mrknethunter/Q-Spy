@@ -60,7 +60,7 @@ first, frozen hash-verified splits, every result regenerable from a script.
 
 ## Documentation
 pip install -r requirements-docs.txt && python -m mkdocs serve
-Quick figure regeneration: make figures — Full test suite: make test
+Quick figure regeneration: make figures - Full test suite: make test
 
 ## License
 GPL-3.0
