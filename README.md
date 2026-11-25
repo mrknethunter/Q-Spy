@@ -36,14 +36,6 @@ instead of full states: **3 circuits per glitch instead of N²/2** (360 vs 7140)
 | Few-shot (E-02 preview) | quantum = classical at every k (macro-F1 0.838 both at k=50) |
 | Novelty (E-03) | every detector finds Fast Scattering (AUROC > 0.93); classical RBF beats projected by 0.026 [−0.044, −0.008] |
 
-## The verdict
-**Two positive results, one negative.** The quantum pipeline runs on real IBM
-hardware at predicted cost and noise, and the projected kernel avoids
-concentration but on 7 tabular features a well-tuned classical method matches
-(few-shot) or slightly beats (novelty) it.
-
-> No quantum advantage — a negative result measured with rules fixed in advance.
-
 Where an advantage could still live: richer inputs (spectrograms, auxiliary
 channels), non-simulable scales, and pre-screening with the geometric
 difference (implemented in G-02).
