@@ -58,8 +58,12 @@ $ pip install -r requirements-docs.txt && python -m mkdocs serve
 ```
 Quick figure regeneration:
 ```bash
-$ make figures Full test suite: make test
+$ make figures
 ```
+```bash
+Full test suite:
+```
+$ make test
 
 ## License
 GPL-3.0
