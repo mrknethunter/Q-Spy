@@ -60,10 +60,9 @@ Quick figure regeneration:
 ```bash
 $ make figures
 ```
-```bash
 Full test suite:
-```
+```bash
 $ make test
-
+```
 ## License
 GPL-3.0
