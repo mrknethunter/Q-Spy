@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Minimal unit tests for M-06 (`stats.py`) verified against `scipy.stats`."""
 
 from __future__ import annotations
 
