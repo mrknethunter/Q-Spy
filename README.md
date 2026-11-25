@@ -137,84 +137,80 @@ $ make test
 ```
 
 ## References
-- [1] M. Zevin et al., “Gravity Spy: integrating Advanced LIGO detector characterization, machine learning, and citizen science,” Class. Quantum Grav. 34, 064003 (2017). \
-- [2] S. Bahaadini et al., “Machine learning for Gravity Spy: Glitch classification and dataset,” Information Sciences 444, 172 (2018). \
+- [1] M. Zevin et al., “Gravity Spy: integrating Advanced LIGO detector characterization, machine learning, and citizen science,” Class. Quantum Grav. 34, 064003 (2017).
+- [2] S. Bahaadini et al., “Machine learning for Gravity Spy: Glitch classification and dataset,” Information Sciences 444, 172 (2018).
 - [3] J. Glanzer et al., “Data quality up to the third observing run of Advanced LIGO: Gravity Spy
-glitch classifications,” Class. Quantum Grav. 40, 065004 (2023).\
+glitch classifications,” Class. Quantum Grav. 40, 065004 (2023)
 - [4] S. Soni et al., “Discovering features in gravitational-wave data through detector characterization,
-citizen science and machine learning,” Class. Quantum Grav. 38(19) (2021), arXiv:2103.12104.\
+citizen science and machine learning,” Class. Quantum Grav. 38(19) (2021), arXiv:2103.12104
 - [5] F. Robinet et al., “Omicron: a tool to characterize transient noise in gravitational-wave detectors,”
-SoftwareX 12, 100620 (2020).\
+SoftwareX 12, 100620 (2020)
 - [6] D. George, H. Shen, E. A. Huerta, “Glitch classification and clustering for LIGO with deep transfer
-learning,” NeurIPS 2017 Workshop on Deep Learning for Physical Sciences, arXiv:1711.07468.\
+learning,” NeurIPS 2017 Workshop on Deep Learning for Physical Sciences, arXiv:1711.07468
 - [7] T. S. Fernandes et al., “Convolutional neural networks for the classification of glitches in
-gravitational-wave data streams,” Class. Quantum Grav. 40, 195018 (2023), arXiv:2303.13917.\
-- [8] Y. Wu et al., “Advancing glitch classification in Gravity Spy: multi-view fusion with attentionbased machine learning for Advanced LIGO’s fourth observing run,” arXiv:2401.12913.\
-- [9] M. Llorens-Monteagudo, A. Torres-Forné, J. A. Font, A. Marquina, “Classification of gravitationalwave glitches via dictionary learning,” arXiv:1811.03867.\
+gravitational-wave data streams,” Class. Quantum Grav. 40, 195018 (2023), arXiv:2303.13917
+- [8] Y. Wu et al., “Advancing glitch classification in Gravity Spy: multi-view fusion with attentionbased machine learning for Advanced LIGO’s fourth observing run,” arXiv:2401.12913
+- [9] M. Llorens-Monteagudo, A. Torres-Forné, J. A. Font, A. Marquina, “Classification of gravitationalwave glitches via dictionary learning,” arXiv:1811.03867
 - [10] M.-C. Isfan et al., “Quantum computing tools for fast detection of gravitational waves in the
-context of LISA space mission,” arXiv:2509.12929.\
+context of LISA space mission,” arXiv:2509.12929
 - [11] M.-C. Isfan, L.-I. Caramete, A. Caramete, “Evaluating state-of-the-art cloud quantum computers
 for quantum neural networks in gravitational waves data analysis,” arXiv:2601.14036.
-15
-Q-Spy · Projected Quantum Kernels for LIGO Glitches Project Proposal
 - [12] M. H. Hassanshahi et al., “A quantum-enhanced support vector machine for galaxy classification,”
-arXiv:2306.00881.\
+arXiv:2306.00881
 - [13] M. Ziiatdinov, F. Farsian, F. Schillirò, S. Distefano, “Comparing quantum machine learning
-approaches in astrophysical signal detection,” IEEE QSW 2025, arXiv:2507.19505.\
+approaches in astrophysical signal detection,” IEEE QSW 2025, arXiv:2507.19505
 - [14] T. Kawamuro et al., “Quantum machine learning for identifying transient events in X-ray light
-curves,” arXiv:2507.05589.\
+curves,” arXiv:2507.05589
 - [15] M. Kordzanganeh, A. Utting, A. Scaife, “Quantum machine learning for radio astronomy,”
-NeurIPS 2021 ML4PS Workshop, arXiv:2112.02655.\
+NeurIPS 2021 ML4PS Workshop, arXiv:2112.02655
 - [16] V. Havlíˇcek et al., “Supervised learning with quantum-enhanced feature spaces,” Nature 567, 209
-(2019).\
+(2019)
 - [17] M. Schuld, N. Killoran, “Quantum machine learning in feature Hilbert spaces,” Phys. Rev. Lett.
-122, 040504 (2019).\
+122, 040504 (2019)
 - [18] M. Schuld, “Supervised quantum machine learning models are kernel methods,”
-arXiv:2101.11020.\
-- [19] H.-Y. Huang et al., “Power of data in quantum machine learning,” Nat. Commun. 12, 2631 (2021).\
+arXiv:2101.11020
+- [19] H.-Y. Huang et al., “Power of data in quantum machine learning,” Nat. Commun. 12, 2631 (2021)
 - [20] Y. Liu, S. Arunachalam, K. Temme, “A rigorous and robust quantum speed-up in supervised
-machine learning,” Nat. Phys. 17, 1013 (2021).\
+machine learning,” Nat. Phys. 17, 1013 (2021)
 - [21] J. R. Glick et al., “Covariant quantum kernels for data with group structure,” Nat. Phys. 20, 479
-(2024).\
+(2024)
 - [22] S. Thanasilp, S. Wang, M. Cerezo, Z. Holmes, “Exponential concentration in quantum kernel
-methods,” Nat. Commun. (2024), doi:10.1038/s41467-024-49287-w.\
+methods,” Nat. Commun. (2024), doi:10.1038/s41467-024-49287-w
 - [23] R. Shaydulin, S. M. Wild, “Importance of kernel bandwidth in quantum machine learning,” Phys.
-Rev. A 106, 042407 (2022).\
+Rev. A 106, 042407 (2022)
 - [24] A. Canatar et al., “Bandwidth enables generalization in quantum kernel models,”
-arXiv:2206.06686.\
+arXiv:2206.06686
 - [25] Y. Suzuki, M. Li, “Effect of alternating layered ansatzes on trainability of projected quantum
-kernel,” arXiv:2310.00361.\
+kernel,” arXiv:2310.00361
 - [26] J. Bowles, S. Ahmed, M. Schuld, “Better than classical? The subtle art of benchmarking quantum
-machine learning models,” arXiv:2403.07059.\
+machine learning models,” arXiv:2403.07059
 - [27] J. Schnabel, M. Roth, “Quantum kernel methods under scrutiny: a benchmarking study,”
-arXiv:2409.04406.\
+arXiv:2409.04406
 - [28] M. Cerezo et al., “Does provable absence of barren plateaus imply classical simulability?,” Nat.
-Commun. 16, 7907 (2025).\
+Commun. 16, 7907 (2025)
 - [29] V. Belis et al., “Guided quantum compression for high dimensional data classification,” Mach.
-Learn.: Sci. Technol. 5, 035010 (2024), arXiv:2402.09524.\
+Learn.: Sci. Technol. 5, 035010 (2024), arXiv:2402.09524
 - [30] N. Liu, P. Rebentrost, “Quantum machine learning for quantum anomaly detection,” Phys. Rev. A
-97, 042315 (2018).\
+97, 042315 (2018)
 - [31] O. Kyriienko, E. B. Magnusson, “Unsupervised quantum machine learning for fraud detection,”
-arXiv:2208.01203.\
+arXiv:2208.01203
 - [32] M. Kölle et al., “Efficient quantum one-class support vector machines for anomaly detection using
-randomized measurements and variable subsampling,” arXiv:2407.20753.\
+randomized measurements and variable subsampling,” arXiv:2407.20753
 - [33] D. Pranji´c et al., “Unsupervised quantum anomaly detection on noisy quantum processors,”
-arXiv:2411.16970.\
+arXiv:2411.16970
 - [34] K. A. Wo´zniak et al., “Quantum anomaly detection in the latent space of proton collision events
 at the LHC,” arXiv:2301.10780.
-16
-Q-Spy · Projected Quantum Kernels for LIGO Glitches Project Proposal
 - [35] A. Pérez-Salinas et al., “Data re-uploading for a universal quantum classifier,” Quantum 4, 226
-(2020).\
+(2020)
 - [36] M. E. Sahin et al., “Qiskit Machine Learning: an open-source library for quantum machine
-learning tasks at scale on quantum hardware and classical simulators,” arXiv:2505.17756.\
-- [37] A. Javadi-Abhari et al., “Quantum computing with Qiskit,” arXiv:2405.08810.\
+learning tasks at scale on quantum hardware and classical simulators,” arXiv:2505.17756
+- [37] A. Javadi-Abhari et al., “Quantum computing with Qiskit,” arXiv:2405.08810
 - [38] E. van den Berg, Z. K. Minev, K. Temme, “Model-free readout-error mitigation for quantum
-expectation values,” Phys. Rev. A 105, 032620 (2022).\
+expectation values,” Phys. Rev. A 105, 032620 (2022)
 - [39] J. J. Wallman, J. Emerson, “Noise tailoring for scalable quantum computation via randomized
-compiling,” Phys. Rev. A 94, 052325 (2016).\
+compiling,” Phys. Rev. A 94, 052325 (2016)
 - [40] K. Temme, S. Bravyi, J. M. Gambetta, “Error mitigation for short-depth quantum circuits,” Phys.
-Rev. Lett. 119, 180509 (2017).\
+Rev. Lett. 119, 180509 (2017)
 - [41] IBM Quantum Documentation, “Workload usage — estimate usage before submitting a job,”
 quantum.cloud.ibm.com/docs/guides/estimate-job-run-time (accessed October 2026).
 
