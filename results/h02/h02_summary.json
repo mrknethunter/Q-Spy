@@ -1,0 +1,25 @@
+{
+  "run": "hw-20261125T124523Z",
+  "repeat": "hw-20261125T113624Z",
+  "device": "ibm_kingston",
+  "usage_s_campaign": 276,
+  "usage_s_repeat": 132,
+  "shot_noise_rmse": 0.03,
+  "main_rmse_HW_L0": 0.029882303238899253,
+  "control_rmse_HW_L0": 0.03869976924035281,
+  "device_error_without_mitigation": 0.024447333990776123,
+  "repeat_main_rmse_HW_HW": 0.03882943420811211,
+  "repeat_main_kta_HW": 0.5279669202006402,
+  "independent_shot_noise_rmse": 0.042426406871192854,
+  "drift_rmse_start_end_HW": 0.03442395034289475,
+  "main_kernel_corr_L0_HW": 0.9943487409179308,
+  "novelty_preview_auroc": {
+    "projected:L0": 0.9536507936507936,
+    "projected:HW": 0.9574603174603175,
+    "rbf_features:features": 0.951111111111111
+  },
+  "novelty_preview_counts": {
+    "fast_scattering": 15,
+    "known": 105
+  }
+}

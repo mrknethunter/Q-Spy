@@ -1,0 +1,26 @@
+{
+  "tier": "L2",
+  "embed_config": {
+    "n_qubits": 8,
+    "layers": 2,
+    "s": 0.1778,
+    "entangle": true
+  },
+  "n_points": 40,
+  "precision": 0.03,
+  "backend_name": "fake_kingston",
+  "layout": [
+    21,
+    22,
+    23,
+    16,
+    3,
+    2,
+    1,
+    0
+  ],
+  "two_qubit_depth": 4,
+  "run_id": "hw-20261125T113624Z-control-L2",
+  "created_at": "2026-11-25T11:36:41.084788+00:00",
+  "git_commit": "82f4dfc866c071b12663856bcb50812614e0ad4c"
+}

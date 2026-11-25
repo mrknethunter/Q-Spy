@@ -142,6 +142,62 @@ X, y = load_main_subset(); print(predict(X, y, configs=[(0.1778, 0.03)], n_qubit
 
 ---
 
+## 3ter. Campagna hardware (H-02) su ibm_kingston
+
+**Domanda.** Le previsioni di Q-06 reggono sul chip vero? Quanto serve la mitigazione, il chip deriva, e il rumore
+cambia la concentrazione o la capacità di trovare Fast_Scattering?
+
+**Come.** Configurazione congelata (`configs/hardware_frozen.yaml`, tag `hw-freeze`): 8 qubit, 2 layer, s = 0,1778,
+precisione 0,03. Sette esperimenti sui sottoinsiemi di D-05, corsa `hw-20261125T124523Z`, salvata in `store/runs/`. Una
+prima sottomissione (`hw-20261125T113624Z`) si è fermata dopo `main`: la usiamo come ripetizione indipendente.
+Analisi: `python experiments/h02_analysis.py` (legge solo lo store, nessun uso di QPU).
+
+**Numeri.**
+
+| | Valore |
+|---|---|
+| Secondi QPU misurati / stimati (con margine 30%) | 276 / 413 |
+| Errore hardware contro esatto, main mitigato (120 glitch) | 0,030 |
+| Stesso errore senza mitigazione (controllo, 40 glitch) | 0,039 |
+| Errore proprio del chip senza mitigazione (√(0,039² − 0,030²)) | 0,024 |
+| Allineamento KTA main: esatto / emulatore / hardware / ripetizione | 0,531 / 0,530 / 0,525 / 0,528 |
+| Correlazione tra kernel esatto e kernel hardware (7140 coppie) | 0,994 |
+| Differenza tra due corse hardware dello stesso main | 0,039 (atteso dal solo campionamento: 0,042) |
+| Deriva tra inizio e fine campagna (5 glitch) | 0,034 (atteso: 0,042) |
+| Fast_Scattering contro noti sui 120 glitch, AUROC (esatto / hardware / RBF classico) | 0,954 / 0,957 / 0,951 |
+
+![H-02](../results/h02/h02_campaign.png)
+
+**Come leggere la figura** (`results/h02/h02_campaign.png`):
+- **(a)** ogni punto è una componente di un vettore di Bloch: in ascissa il valore esatto, in ordinata quello misurato.
+  Rosso: main con mitigazione; grigio: controllo senza. Tutti sulla diagonale; i grigi sono un po' più dispersi. I valori
+  stanno tra −0,5 e 1 perché con s = 0,1778 gli stati restano vicini a quello iniziale (Z = 1).
+- **(b)** la distribuzione degli errori (misurato meno esatto). La curva rossa (hardware mitigato) coincide con quella
+  arancio (emulatore): larghezza ≈ 0,03, cioè il rumore di campionamento delle 1112 ripetizioni. La curva grigia (senza
+  mitigazione) è più larga (0,039) e spostata a sinistra.
+- **(c)** concentrazione: varianza dei valori del kernel fuori diagonale per 4, 8, 12 qubit sugli stessi 30 glitch.
+  Verde pieno: proiettato in simulazione; verde tratteggiato: proiettato sull'hardware, circa 12% più basso (il rumore
+  "accorcia" un po' i vettori) ma con lo stesso andamento piatto. Rosso: fidelity kernel in simulazione. Alla bandwidth
+  scelta nessuno dei due si concentra tra 4 e 12 qubit: il crollo visto in E-01 avviene a s = 1.
+- **(d)** l'allineamento con le classi sui 120 glitch: esatto, emulatore, hardware, ripetizione. Le barre sono quasi
+  uguali: il rumore del chip toglie circa l'1% dell'informazione sulle classi.
+
+**Conclusioni.**
+- Q-06 aveva previsto bene: con la mitigazione l'hardware è al limite del rumore statistico (0,030) e l'allineamento
+  perde 0,006. L'emulatore L2 è un buon sostituto del chip per questo circuito.
+- La mitigazione serve: senza, il chip aggiunge un errore suo di circa 0,024, quasi quanto il campionamento.
+- Il chip non deriva in modo misurabile durante i circa 10 minuti della campagna, e due corse diverse differiscono meno
+  di quanto previsto dal solo campionamento.
+- Anteprima di E-04: sui 120 glitch, un One-Class SVM allenato su 2048 glitch noti (in simulazione) separa i 15
+  Fast_Scattering dai 105 noti con AUROC 0,957 usando i vettori misurati sul chip, come con quelli esatti (0,954) e
+  come l'RBF classico sulle feature (0,951). Il rumore hardware non peggiora il rilevamento.
+
+**Limiti.** 15 Fast_Scattering soltanto: l'AUROC di (d)/anteprima ha un'incertezza di qualche centesimo. Il detector
+dell'anteprima usa la scelta di γ più frequente di E-03 (c = 31,6) e ν = 0,05 senza ritaratura: E-04 completo la rifà.
+Un solo chip, un solo giorno.
+
+---
+
 ## 4. Cosa ne deriva
 
 Configurazione proposta per la campagna, in `configs/hardware_frozen.yaml` e motivata in `docs/decisions.md`:

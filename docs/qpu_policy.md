@@ -36,8 +36,17 @@ Code that can reach a QPU defaults to a dry run and submits only with an explici
 | Date | Issue | Account | Backend | Purpose | Estimated s | Measured s | Job IDs |
 |---|---|---|---|---|---|---|---|
 | 2026-11-24 | H-01 | mrknethunter | ibm_kingston | pilot, 10 points, 8 qubits, L=2 | 17.8 | 13 | dc2e0n6q4uuc73a569f0 |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | first submission, drift-start, 5 points (interrupted after main) | 10.2 | 8 | dc3ch1thdvas73bnjda0 |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | first submission, main, 120 points | 184.7 | 124 | dc3ch6mq4uuc73a6mg2g |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | drift-start, 5 points, 8 qubits | 10.2 | 8 | dc3dh7thdvas73bnld60 |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | main, 120 points, 8 qubits | 184.7 | 124 | dc3dhcuq4uuc73a6og1g |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | control, 40 points, 8 qubits, no mitigation | 63.3 | 37 | dc3dimlhdvas73bnlfmg |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | concentration-n4, 30 points, 4 qubits | 48.1 | 33 | dc3djelhdvas73bnlgn0 |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | concentration-n8, 30 points, 8 qubits | 48.1 | 33 | dc3djqinj2vs73di4hf0 |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | concentration-n12, 30 points, 12 qubits | 48.1 | 33 | dc3dk6ds2omc738dcmcg |
+| 2026-11-25 | H-02 | mrknethunter | ibm_kingston | drift-end, 5 points, 8 qubits | 10.2 | 8 | dc3dkj6q4uuc73a6okk0 |
 
-Budget remaining this window: **587 s** (window opened 2026-11-24 00:51 UTC; update after every job).
+Budget remaining this window: **179 s** (600 − 13 pilot − 132 first H-02 submission − 276 H-02 campaign; window opened 2026-11-24 00:51 UTC; update after every job).
 
 ## H-01 pilot decision: GO
 
