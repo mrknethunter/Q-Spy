@@ -162,6 +162,7 @@ Analisi: `python experiments/h02_analysis.py` (legge solo lo store, nessun uso d
 | Errore proprio del chip senza mitigazione (√(0,039² − 0,030²)) | 0,024 |
 | Allineamento KTA main: esatto / emulatore / hardware / ripetizione | 0,531 / 0,530 / 0,525 / 0,528 |
 | Correlazione tra kernel esatto e kernel hardware (7140 coppie) | 0,994 |
+| H4: KTA hardware − KTA esatto, intervallo bootstrap 95% sui punti | −0,006 [−0,010, −0,001]; ripetizione −0,003 [−0,006, +0,001] |
 | Differenza tra due corse hardware dello stesso main | 0,039 (atteso dal solo campionamento: 0,042) |
 | Deriva tra inizio e fine campagna (5 glitch) | 0,034 (atteso: 0,042) |
 | Fast_Scattering contro noti sui 120 glitch, AUROC (esatto / hardware / RBF classico) | 0,954 / 0,957 / 0,951 |
@@ -183,6 +184,8 @@ Analisi: `python experiments/h02_analysis.py` (legge solo lo store, nessun uso d
   uguali: il rumore del chip toglie circa l'1% dell'informazione sulle classi.
 
 **Conclusioni.**
+- **H4 è supportata**: la differenza di allineamento tra chip ed esatto è −0,006, con intervallo tutto dentro la soglia
+  pre-registrata di 0,02.
 - Q-06 aveva previsto bene: con la mitigazione l'hardware è al limite del rumore statistico (0,030) e l'allineamento
   perde 0,006. L'emulatore L2 è un buon sostituto del chip per questo circuito.
 - La mitigazione serve: senza, il chip aggiunge un errore suo di circa 0,024, quasi quanto il campionamento.

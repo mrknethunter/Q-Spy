@@ -41,6 +41,18 @@ def rmse(a, b):
     return float(np.sqrt(np.mean((a - b) ** 2)))
 
 
+def delta_kta_ci(B_ref, B, y, reps=2000, seed=0):
+    # H4: KTA(hardware) - KTA(exact) with a bootstrap 95% CI over points
+    K0, K1 = projected_kernel(B_ref, B_ref, 1.0), projected_kernel(B, B, 1.0)
+    rng = np.random.default_rng(seed)
+    d = []
+    for _ in range(reps):
+        i = rng.integers(0, len(y), len(y))
+        if len(set(y[i])) > 1:
+            d.append(kernel_target_alignment(K1[np.ix_(i, i)], y[i]) - kernel_target_alignment(K0[np.ix_(i, i)], y[i]))
+    return float(kernel_target_alignment(K1, y) - kernel_target_alignment(K0, y)), [float(v) for v in np.percentile(d, [2.5, 97.5])]
+
+
 def novelty_preview(frozen, df, features, main_ids, B_main, n_train=2048, c=31.6, seed=0):
     # shortcut: E-03's most frequent projected choice (c = 31.6, gamma = c / median) and nu = 0.05; E-04 proper re-tunes
     train_ids = load_split(frozen["scaler_protocol"], frozen["scaler_seed"], held_out=HELD_OUT).train_ids
@@ -116,6 +128,8 @@ def analyse(config="configs/hardware_frozen.yaml", out="results/h02"):
         drift_rmse_start_end_HW=rmse(s["HW"], e["HW"]),
         main_kernel_corr_L0_HW=float(np.corrcoef(*(projected_kernel(B, B, 1.0)[np.triu_indices(len(B), 1)]
                                                    for B in (tiers["main"]["L0"], tiers["main"]["HW"])))[0, 1]),
+        h4_delta_kta=delta_kta_ci(tiers["main"]["L0"], tiers["main"]["HW"], y_main),
+        h4_delta_kta_repeat=delta_kta_ci(tiers["main"]["L0"], rep_main, y_main),
         novelty_preview_auroc=novelty, novelty_preview_counts=dict(fast_scattering=n_pos, known=n_neg),
     )
     o = Path(out)
