@@ -9,4 +9,7 @@ figures:
 	python experiments/q06_noise_prediction.py
 	python experiments/e01_concentration.py
 
-.PHONY: install test figures
+e2e-l0:
+	python experiments/e2e_l0.py
+
+.PHONY: install test figures e2e-l0
