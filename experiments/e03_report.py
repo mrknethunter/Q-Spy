@@ -8,10 +8,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import KFold
 
 from data.splits import DEFAULT_SPLIT_DIR, load_split, verify_dataset
 from features.transforms import make_features
-from experiments.e03_novelty import HELD_OUT, MODELS, _hash, _id_hash, _json, anomaly_metrics, summarize
+from experiments.e03_novelty import (HELD_OUT, MODELS, _hash, _id_hash, _json,
+                                     anomaly_metrics, calibration_threshold, summarize)
+from experiments.e03_metrics import event_bootstrap_seed, paired_event_bootstrap
 
 
 def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
@@ -20,6 +23,10 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
     manifest = json.loads((directory / "manifest.json").read_text())
     if manifest["status"] != "complete":
         raise ValueError("only complete experiments may be reported")
+    repository = Path(__file__).resolve().parent.parent
+    for relative, expected in manifest["source_sha256"].items():
+        if _hash(repository / relative) != expected:
+            raise ValueError(f"source hash mismatch: {relative}")
     for relative, expected in manifest["files"].items():
         if _hash(directory / relative) != expected:
             raise ValueError(f"result hash mismatch: {relative}")
@@ -35,6 +42,8 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
     split_manifest = json.loads((splits / "manifest.json").read_text())
     if _hash(splits / "manifest.json") != manifest["split_manifest_sha256"]:
         raise ValueError("split version differs from the experiment")
+    if split_manifest["dataset_sha256"] != manifest["dataset_sha256"]:
+        raise ValueError("experiment dataset fingerprint differs from frozen D-04")
     entries = {(entry["held_out"], entry["seed"]): entry for entry in split_manifest["splits"]
                if entry["protocol"] == "P2"}
     with np.load(splits / "catalog.npz", allow_pickle=False) as file:
@@ -46,12 +55,18 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
         curated = curated.set_index("id", drop=False, verify_integrity=True)
     metrics = pd.read_csv(directory / "e03_metrics.csv", float_precision="round_trip")
     recalculated = 0
+    event_rows, event_differences = [], []
     for family in settings["held_outs"]:
         if progress:
             print(f"Verifying {family}: scores, frozen partitions and scaler states", flush=True)
         predictions = pd.read_csv(directory / "predictions" / (family + ".csv.gz"), float_precision="round_trip")
         if set(predictions["seed"]) != set(settings["seeds"]) or not predictions["held_out"].eq(family).all():
             raise ValueError("prediction fold/seed mismatch")
+        validation_predictions = pd.read_csv(
+            directory / "validation_scores" / (family + ".csv.gz"), float_precision="round_trip")
+        if (set(validation_predictions["seed"]) != set(settings["seeds"])
+                or not validation_predictions["held_out"].eq(family).all()):
+            raise ValueError("validation-score fold/seed mismatch")
         fixed_test = None
         for seed in settings["seeds"]:
             case = selected[family, seed]
@@ -69,10 +84,48 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
                     raise ValueError("held-out label in a FULL train/validation partition")
             if set(case["train"]) & set(case["val"]) or set(case["train"]) & set(case["test"]) or set(case["val"]) & set(case["test"]):
                 raise ValueError("selected ID leakage")
+            fold_count = min(settings["cv_folds"], len(case["train"]))
+            expected_inner_hashes = {
+                _id_hash([case["train"][index] for index in train_indices])
+                for train_indices, _ in KFold(n_splits=fold_count, shuffle=True,
+                                              random_state=seed).split(np.zeros(len(case["train"])))
+            }
+            for model_name in MODELS:
+                model_audit = info["models"][model_name]
+                inner_records = model_audit["inner_preprocessing_folds"]
+                if ({record["ids_sha256"] for record in inner_records} != expected_inner_hashes
+                        or any(record["role"] != "inner_cv_training" for record in inner_records)):
+                    raise ValueError("fold scaler membership differs from M-04 inner training IDs")
+                if model_audit["outer_preprocessing"]["ids_sha256"] != _id_hash(case["train"]):
+                    raise ValueError("final scaler was not fitted on the selected outer training IDs")
+                if (not np.array_equal(np.asarray(model_audit["outer_preprocessing"]["scaler_center"]),
+                                       np.asarray(info["scaler_center"]))
+                        or not np.array_equal(np.asarray(model_audit["outer_preprocessing"]["scaler_scale"]),
+                                              np.asarray(info["scaler_scale"]))):
+                    raise ValueError("model outer scaler differs from the recorded shared scaler")
+            if set(info["model_outer_id_sha256"]) != set(MODELS):
+                raise ValueError("model outer-ID audit is incomplete")
+            expected_outer_hashes = {name: info["id_sha256"][name] for name in ("train", "val", "test")}
+            if any(info["model_outer_id_sha256"][model] != expected_outer_hashes for model in MODELS):
+                raise ValueError("models did not receive identical outer partition IDs")
             if curated is not None:
                 _, scaler = make_features(curated.loc[case["train"]])
                 if not np.array_equal(scaler.center_, np.array(info["scaler_center"])) or not np.array_equal(scaler.scale_, np.array(info["scaler_scale"])):
                     raise ValueError("scaler does not reproduce from selected training rows")
+                for model_name in MODELS:
+                    for record in info["models"][model_name]["inner_preprocessing_folds"]:
+                        matched = [
+                            [case["train"][index] for index in train_indices]
+                            for train_indices, _ in KFold(n_splits=fold_count, shuffle=True,
+                                                          random_state=seed).split(np.zeros(len(case["train"])))
+                            if _id_hash([case["train"][index] for index in train_indices]) == record["ids_sha256"]
+                        ]
+                        if len(matched) != 1:
+                            raise ValueError("inner scaler audit does not map to one fold")
+                        _, fold_scaler = make_features(curated.loc[matched[0]])
+                        if (not np.array_equal(fold_scaler.center_, np.array(record["scaler_center"]))
+                                or not np.array_equal(fold_scaler.scale_, np.array(record["scaler_scale"]))):
+                            raise ValueError("an inner scaler does not reproduce from its training IDs")
             test = predictions[predictions["seed"] == seed]
             if test["id"].tolist() != case["test"] or len(test) != len(set(test["id"])):
                 raise ValueError("prediction IDs differ from the recorded test selection")
@@ -81,15 +134,32 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
             expected_unknown = test["label"].isin(unknown).to_numpy()
             if not np.array_equal(expected_unknown, test["is_unknown"].to_numpy(dtype=bool)):
                 raise ValueError("unknown targets disagree with the P2 manifest")
+            if not set(unknown).issubset(set(test["label"])) or expected_unknown.all() or not expected_unknown.any():
+                raise ValueError("selected test IDs omit an unknown class or a known class")
             if fixed_test is not None and fixed_test != case["test"]:
                 raise ValueError("test selection changed across training seeds")
             fixed_test = case["test"]
+            validation = validation_predictions[validation_predictions["seed"] == seed]
+            if (validation["id"].tolist() != case["val"]
+                    or len(validation) != len(set(validation["id"]))
+                    or validation["label"].tolist() != [labels[id_] for id_ in validation["id"]]):
+                raise ValueError("saved validation IDs/labels differ from selected known-only partition")
+            if validation["label"].isin(unknown).any():
+                raise ValueError("held-out class appears in saved validation scores")
             for model in MODELS:
                 model_audit = info["models"][model]
-                if model_audit["n_configs_evaluated"] != settings["budget"] or model_audit["validation_fpr"] > .01:
-                    raise ValueError("budget or known-validation calibration mismatch")
+                if model_audit["n_configs_evaluated"] != settings["budget"]:
+                    raise ValueError("equal-budget configuration mismatch")
+                validation_scores = validation[model + "_score"].to_numpy(dtype=np.float64)
+                threshold = calibration_threshold(validation_scores)
+                validation_fpr = float(np.mean(validation_scores > threshold))
+                if (not np.isclose(threshold, model_audit["threshold"], rtol=0, atol=1e-12)
+                        or not np.isclose(validation_fpr, model_audit["validation_fpr"], rtol=0, atol=1e-12)
+                        or validation_fpr > .01):
+                    raise ValueError("known-validation threshold does not reproduce or exceeds 1% FPR")
+                if not np.all(validation[model + "_threshold"].to_numpy() == threshold):
+                    raise ValueError("saved validation thresholds disagree with recomputed threshold")
                 scores = test[model + "_score"].to_numpy()
-                threshold = model_audit["threshold"]
                 if not np.all(test[model + "_threshold"].to_numpy() == threshold):
                     raise ValueError("saved thresholds disagree with the audit")
                 for scope in ("target_family", "protocol_unknown"):
@@ -108,12 +178,33 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
                         if rows.iloc[0]["n_test"] != int(mask.sum()) or not np.isclose(rows.iloc[0]["positive_fraction"], y.mean()):
                             raise ValueError("metric test support/prevalence mismatch")
                         recalculated += 1
+            for scope in ("target_family", "protocol_unknown"):
+                mask = (~expected_unknown | test["label"].eq(family).to_numpy()
+                        if scope == "target_family" else np.ones(len(test), dtype=bool))
+                y = expected_unknown[mask].astype(int)
+                score_map = {model: test[model + "_score"].to_numpy(dtype=np.float64)[mask]
+                             for model in MODELS}
+                bootstrap_seed = event_bootstrap_seed(family, seed)
+                metric_records, difference_records = paired_event_bootstrap(
+                    y, score_map, n_resamples=settings["event_bootstrap"], seed=bootstrap_seed)
+                event_rows.extend(dict(held_out=family, seed=seed, scope=scope,
+                                       bootstrap_seed=bootstrap_seed, **record)
+                                  for record in metric_records)
+                event_differences.extend(dict(held_out=family, seed=seed, scope=scope,
+                                              bootstrap_seed=bootstrap_seed, **record)
+                                         for record in difference_records)
         if progress:
             print(f"Verified {family}; metrics recalculated so far: {recalculated}", flush=True)
     if recalculated != len(metrics) or manifest["metric_rows"] != len(metrics):
         raise ValueError("extra or missing metric rows")
     actual_summary, actual_pairs = summarize(metrics, bootstrap=settings["bootstrap"])
-    for name, expected in (("e03_summary.csv", actual_summary), ("e03_paired_differences.csv", actual_pairs)):
+    expected_tables = (
+        ("e03_summary.csv", actual_summary),
+        ("e03_paired_differences.csv", actual_pairs),
+        ("e03_event_bootstrap.csv", pd.DataFrame(event_rows)),
+        ("e03_event_paired_differences.csv", pd.DataFrame(event_differences)),
+    )
+    for name, expected in expected_tables:
         actual = pd.read_csv(directory / name, float_precision="round_trip")
         pd.testing.assert_frame_equal(actual, expected, check_dtype=False, rtol=1e-12, atol=1e-12)
     return dict(status="pass", full_frozen_cases_checked=len(keys), models_per_case=len(MODELS),
@@ -121,6 +212,7 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
                 full_partition_class_exclusion_checked=True, selected_ids_and_labels_checked=True,
                 fixed_test_across_seeds_checked=True, equal_budgets_checked=True,
                 scalers_refitted_from_selected_training=curated is not None,
+                source_hashes_checked=True, event_bootstrap_recalculated=True,
                 curated_csv_sha256=_hash(curated_csv) if curated_csv is not None else None,
                 paired_bootstrap_recalculated=True, manifest_sha256=_hash(directory / "manifest.json"),
                 verifier_sha256=_hash(__file__))
@@ -191,6 +283,18 @@ def render_report(directory, verification):
     for _, row in pairs[(pairs["held_out"] == HELD_OUT) & (pairs["scope"] == "target_family")
                          & pairs["metric"].isin(main_metrics[:3])].iterrows():
         lines.append(f"| {row['comparison']} | {row['metric']} | {row['mean']:.4f} [{row['ci_low']:.4f}, {row['ci_high']:.4f}] |")
+    lines += ["", "## Incertezza campionaria per trigger", "",
+              "Gli intervalli bootstrap per trigger sono separati da quelli tra seed e sono salvati "
+              "per ogni fold, seed, modello e scope in [e03_event_bootstrap.csv](../results/e03/e03_event_bootstrap.csv). "
+              "Le differenze appaiate projected-minus-classical sono in "
+              "[e03_event_paired_differences.csv](../results/e03/e03_event_paired_differences.csv). "
+              "Ogni intervallo ricampiona trigger noti e anomali separatamente, mantenendo fisse "
+              "le numerosità di classe e quindi la prevalenza osservata; lo stesso campione di ID "
+              "bootstrap è condiviso dai quattro modelli. È incertezza sul campione di trigger "
+              "condizionata a un modello già addestrato e ai conteggi osservati, non un intervallo "
+              "sulla variazione di training o sulla generalizzazione a nuovi run/detector. I trigger "
+              "sono righe del catalogo D-04: non vengono raggruppati per coincidenza fisica tra "
+              "detector. Il verifier ricalcola entrambi i file dagli score salvati.", ""]
     lines += ["", "## Nota fisica e analisi degli errori", "",
               "Un OC-SVM/Isolation Forest/LOF decide noto contro anomalo: non predice quale famiglia "
               "nota sia Fast_Scattering. Perciò separiamo le famiglie note erroneamente segnalate come "
