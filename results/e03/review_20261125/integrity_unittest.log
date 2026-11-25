@@ -1,0 +1,23 @@
+test_all_e03_sources_are_parseable (tests.test_e03_integrity.E03IntegrityTests.test_all_e03_sources_are_parseable) ... ok
+test_atomic_manifest_replaces_whole_json_without_leftover_tempfiles (tests.test_e03_integrity.E03IntegrityTests.test_atomic_manifest_replaces_whole_json_without_leftover_tempfiles) ... ok
+test_case_index_rejects_missing_and_duplicated_seed (tests.test_e03_integrity.E03IntegrityTests.test_case_index_rejects_missing_and_duplicated_seed) ... ok
+test_changed_output_bytes_are_rejected (tests.test_e03_integrity.E03IntegrityTests.test_changed_output_bytes_are_rejected) ... ok
+test_complete_fixture_passes_byte_checks (tests.test_e03_integrity.E03IntegrityTests.test_complete_fixture_passes_byte_checks) ... ok
+test_duplicate_audit_records_are_rejected_even_if_hashes_match (tests.test_e03_integrity.E03IntegrityTests.test_duplicate_audit_records_are_rejected_even_if_hashes_match) ... ok
+test_duplicate_selections_are_rejected_even_if_hashes_match (tests.test_e03_integrity.E03IntegrityTests.test_duplicate_selections_are_rejected_even_if_hashes_match) ... ok
+test_failed_or_partial_runs_are_rejected (tests.test_e03_integrity.E03IntegrityTests.test_failed_or_partial_runs_are_rejected) ... ok
+test_hash_verifier_rejects_empty_mapping (tests.test_e03_integrity.E03IntegrityTests.test_hash_verifier_rejects_empty_mapping) ... ok
+test_missing_predictions_are_rejected (tests.test_e03_integrity.E03IntegrityTests.test_missing_predictions_are_rejected) ... ok
+test_missing_required_output_cannot_be_hidden_by_omitting_its_hash (tests.test_e03_integrity.E03IntegrityTests.test_missing_required_output_cannot_be_hidden_by_omitting_its_hash) ... ok
+test_missing_seed_or_wrong_completed_count_is_rejected (tests.test_e03_integrity.E03IntegrityTests.test_missing_seed_or_wrong_completed_count_is_rejected) ... ok
+test_path_traversal_and_windows_paths_are_rejected (tests.test_e03_integrity.E03IntegrityTests.test_path_traversal_and_windows_paths_are_rejected) ... ok
+test_restart_requires_identical_data_splits_sources_settings_and_seeds (tests.test_e03_integrity.E03IntegrityTests.test_restart_requires_identical_data_splits_sources_settings_and_seeds) ... ok
+test_source_fingerprints_cover_adapter_runner_and_configuration (tests.test_e03_integrity.E03IntegrityTests.test_source_fingerprints_cover_adapter_runner_and_configuration) ... ok
+test_threshold_is_conservative_for_every_small_sample_size (tests.test_e03_integrity.E03IntegrityTests.test_threshold_is_conservative_for_every_small_sample_size) ... ok
+test_threshold_rejects_nonfinite_scores_and_empty_validation (tests.test_e03_integrity.E03IntegrityTests.test_threshold_rejects_nonfinite_scores_and_empty_validation) ... ok
+test_threshold_ties_constant_scores_and_numerical_extremes (tests.test_e03_integrity.E03IntegrityTests.test_threshold_ties_constant_scores_and_numerical_extremes) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.615s
+
+OK

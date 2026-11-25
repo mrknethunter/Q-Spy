@@ -14,8 +14,8 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve
 from sklearn.neighbors import NearestNeighbors
+from sklearn.model_selection import KFold
 
 from data.curate import HELD_OUT, KNOWN_CLASSES, load_curated
 from data.splits import DEFAULT_SPLIT_DIR, load_split, verify_dataset
@@ -23,6 +23,9 @@ from features.transforms import FEATURE_COLUMNS, make_features
 from models.baselines import build_baseline
 from quantum.embed import EmbedConfig, embed
 from store.io import write_bloch
+from experiments.e03_metrics import anomaly_metrics, event_bootstrap_seed, paired_event_bootstrap
+from experiments.e03_preprocessing import FoldRepresentationCache, attach_fold_preprocessing
+from experiments.e03_integrity import SOURCE_FILES, atomic_json, conservative_threshold, sha256_file
 
 MODELS = ("projected_ocsvm", "rbf_ocsvm", "isolation_forest", "lof")
 REPRESENTATIONS = {"projected_ocsvm": "R3", "rbf_ocsvm": "R1",
@@ -37,7 +40,7 @@ def _json(value):
 
 
 def _hash(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    return sha256_file(path)
 
 
 def _id_hash(ids):
@@ -115,29 +118,12 @@ def assert_no_leakage(indexed, split, unknown):
         raise ValueError("test is missing a declared unknown family")
 
 
-def anomaly_metrics(y, scores, fpr_limit=.01):
-    """Novel=1, higher score=more anomalous. AP is not trapezoidal PR-AUC.
-
-    TPR@1%FPR is max TPR among attained ROC points with FPR <= .01;
-    no linear interpolation or test-selected deployment threshold is used.
-    """
-    y, scores = np.asarray(y), np.asarray(scores, dtype=float)
-    if y.ndim != 1 or scores.shape != y.shape or set(np.unique(y)) != {0, 1}:
-        raise ValueError("need aligned one-dimensional binary targets with both classes")
-    if not np.isfinite(scores).all() or not 0 < fpr_limit < 1:
-        raise ValueError("scores must be finite and FPR limit in (0,1)")
-    fpr, tpr, _ = roc_curve(y, scores, drop_intermediate=False)
-    return {"auroc": float(roc_auc_score(y, scores)),
-            "ap": float(average_precision_score(y, scores)),
-            "tpr_at_1pct_fpr": float(tpr[fpr <= fpr_limit].max())}, (fpr, tpr)
-
-
 def calibration_threshold(known_scores, fpr=.01):
     """Threshold fitted ONLY on independent known validation, decision score > t."""
     scores = np.asarray(known_scores, dtype=float)
     if scores.ndim != 1 or not len(scores) or not np.isfinite(scores).all() or not 0 < fpr < 1:
         raise ValueError("invalid known validation scores or FPR")
-    return float(np.quantile(scores, 1 - fpr, method="higher"))
+    return conservative_threshold(scores, fpr)
 
 
 def _counts(frame):
@@ -236,7 +222,7 @@ def _plot_rocs(curves, out):
 
 def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                    n_qubits=8, layers=2, s=.1778, max_train=2048, max_val=2048,
-                   max_test=8192, bootstrap=5000, split_dir=None,
+                   max_test=8192, bootstrap=5000, event_bootstrap=1000, split_dir=None,
                    artifact_dir="results/e03", store_bloch=True, embed_batch_size=512):
     """I-03 entry point. Return contract-compatible long-form metric rows.
 
@@ -247,7 +233,8 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
     held_outs = [HELD_OUT, *KNOWN_CLASSES] if held_outs is None else list(held_outs)
     for name, value, minimum in (("budget", budget, 1), ("cv_folds", cv_folds, 2),
                                   ("n_qubits", n_qubits, 7), ("layers", layers, 1),
-                                  ("bootstrap", bootstrap, 1), ("embed_batch_size", embed_batch_size, 1)):
+                                  ("bootstrap", bootstrap, 1), ("event_bootstrap", event_bootstrap, 1),
+                                  ("embed_batch_size", embed_batch_size, 1)):
         if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
             raise ValueError(f"{name} must be an integer >= {minimum}")
     if budget > 30:
@@ -258,6 +245,8 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
         raise ValueError("invalid held-out family selectors")
     if not np.isfinite(s) or s <= 0:
         raise ValueError("s must be finite and positive")
+    if not isinstance(store_bloch, bool):
+        raise ValueError("store_bloch must be boolean")
     for limit in (max_train, max_val, max_test):
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 0:
             raise ValueError("sample limits must be nonnegative integers")
@@ -273,16 +262,16 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
     if out.exists() and any(out.iterdir()):
         raise FileExistsError(f"{out}: use a new output directory to preserve previous results")
     (out / "predictions").mkdir(parents=True, exist_ok=True)
+    (out / "validation_scores").mkdir(parents=True, exist_ok=True)
     cfg = EmbedConfig(n_qubits, layers, float(s), True)
     settings = dict(seeds=seeds, held_outs=held_outs, budget=budget, cv_folds=cv_folds,
                     embed_config=asdict(cfg), max_train=max_train, max_val=max_val,
                     max_test=max_test, bootstrap=bootstrap, bootstrap_seed=29,
+                    event_bootstrap=event_bootstrap,
                     embed_batch_size=embed_batch_size,
+                    store_bloch=store_bloch,
                     sampling="proportional_label_detector_min_one_SHA256", test_seed=2026)
-    source_files = ("data/curate.py", "data/splits.py", "data/manifest.json", "features/transforms.py",
-                    "models/baselines.py", "kernels/projected.py", "quantum/embed.py",
-                    "quantum/feature_map.py", "quantum/observables.py", "experiments/e03_novelty.py",
-                    "requirements.txt")
+    source_files = SOURCE_FILES
     manifest = dict(experiment="E-03", protocol="P2", tier="L0", status="running", settings=settings,
                     input_rows=len(frame), data_kind=("gravityspy_d02" if split_manifest["dataset_sha256"] ==
                     "c8bb3d84efa5b583ee41d671ae195b73bb5cdf901e3af03e351e1e3eac0260f1" else "alternative_dataset"),
@@ -291,12 +280,16 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                     python=platform.python_version(), versions={name: importlib.metadata.version(name) for name in
                     ("numpy", "pandas", "scikit-learn", "matplotlib", "qiskit", "qiskit-aer")},
                     started_at=datetime.now(timezone.utc).isoformat(), completed_cases=0)
-    (out / "manifest.json").write_text(_json(manifest))
+    atomic_json(out / "manifest.json", manifest)
     rows, rocs, audit, selections, family_counts, neighbors = [], [], [], [], [], []
+    missed_events = []
+    event_rows, event_differences = [], []
     started = time.monotonic()
     try:
         for family in held_outs:
             fold_predictions = []
+            fold_validation_scores = []
+            fixed_test_ids = None
             for seed in seeds:
                 entry = entries[seed, family]
                 unknown = tuple(entry["unknown_classes"])
@@ -308,6 +301,17 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                 train, val, test = [stratified_subset(part, limit, namespace) for part, limit, namespace in zip(
                     full, (max_train, max_val, max_test),
                     (f"E03:{family}:train:{seed}", f"E03:{family}:val:{seed}", f"E03:{family}:test:2026"))]
+                for selected, partition in zip((train, val, test), full):
+                    if selected["id"].duplicated().any() or not set(selected["id"]).issubset(set(partition["id"])):
+                        raise ValueError("selected IDs are duplicated or outside their declared partition")
+                if not set(unknown).issubset(set(test["label"])):
+                    raise ValueError("selected test subset is missing a manifest-declared unknown family")
+                if not test["label"].isin(unknown).any() or test["label"].isin(unknown).all():
+                    raise ValueError("selected test subset must contain known and unknown observations")
+                test_ids = test["id"].astype(str).tolist()
+                if fixed_test_ids is not None and test_ids != fixed_test_ids:
+                    raise ValueError("outer test IDs must be identical across training seeds")
+                fixed_test_ids = test_ids
                 X_train, scaler = make_features(train)
                 X_val, _ = make_features(val, scaler)
                 X_test, _ = make_features(test, scaler)
@@ -327,7 +331,8 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                     write_bloch(case, pd.concat([train, val, test])["id"].tolist(), B,
                                 {"tier": "L0", "embed_config": asdict(cfg), "protocol": "P2",
                                  "held_out": family, "seed": seed,
-                                 "scaler_center": scaler.center_.tolist(), "scaler_scale": scaler.scale_.tolist()})
+                                 "scaler_center": scaler.center_.tolist(), "scaler_scale": scaler.scale_.tolist()},
+                                root=out / "bloch")
                 partitions = dict(zip(("train", "val", "test"), (train, val, test)))
                 case_audit = dict(held_out=family, seed=seed, unknown_classes=list(unknown),
                                   full_counts={name: _counts(part) for name, part in zip(partitions, full)},
@@ -343,29 +348,69 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                 prediction.insert(0, "seed", seed)
                 prediction.insert(0, "held_out", family)
                 prediction["is_unknown"] = test["label"].isin(unknown).to_numpy(dtype=int)
+                model_outer_ids = {}
+                validation_prediction = val[["id", "label", "ifo", "run"]].reset_index(drop=True).copy()
+                validation_prediction.insert(0, "seed", seed)
+                validation_prediction.insert(0, "held_out", family)
                 known = ~test["label"].isin(unknown).to_numpy()
                 nearest = None
+                raw_train = train.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64)
+                raw_val = val.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64)
+                raw_test = test.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64)
+                inner_splits = list(KFold(n_splits=min(cv_folds, len(train)), shuffle=True,
+                                          random_state=seed).split(raw_train))
                 for model_name in MODELS:
                     model = build_baseline("rbf_ocsvm" if model_name == "projected_ocsvm" else model_name,
                                            budget=budget, seed=seed, cv_folds=cv_folds)
-                    train_rep, val_rep, test_rep = Z_parts if model_name == "projected_ocsvm" else (X_train, X_val, X_test)
+                    model.model_name = model_name
+                    projected = model_name == "projected_ocsvm"
+                    cache = FoldRepresentationCache(
+                        representation="projected" if projected else "classical",
+                        n_qubits=n_qubits,
+                        embed_fn=(lambda values: exact_bloch(values, cfg, embed_batch_size)) if projected else None,
+                    )
+                    for inner_train_indices, _ in inner_splits:
+                        cache.register_training_ids(
+                            raw_train[inner_train_indices],
+                            train.iloc[inner_train_indices]["id"],
+                            role="inner_cv_training",
+                        )
+                    cache.register_training_ids(raw_train, train["id"], role="outer_training")
+                    attach_fold_preprocessing(model, cache)
                     fit_started = time.monotonic()
-                    model.fit(train_rep)
-                    validation_scores = model.score_samples(val_rep)
-                    scores = model.score_samples(test_rep)
+                    model.fit(raw_train)
+                    validation_scores = model.score_samples(raw_val)
+                    scores = model.score_samples(raw_test)
                     threshold = calibration_threshold(validation_scores)
                     predicted = scores > threshold
                     report = model.get_budget_report()
                     if report["n_configs_evaluated"] != budget:
                         raise ValueError("unequal hyperparameter configuration budgets")
+                    model_outer_ids[model_name] = {
+                        "train": _id_hash(train["id"]),
+                        "val": _id_hash(val["id"]),
+                        "test": _id_hash(test["id"]),
+                    }
+                    inner_preprocessing = [record for record in cache.fit_audit
+                                           if record["role"] == "inner_cv_training"]
+                    outer_preprocessing = [record for record in cache.fit_audit
+                                           if record["role"] == "outer_training"]
+                    if len(inner_preprocessing) != len(inner_splits) or len(outer_preprocessing) != 1:
+                        raise ValueError("fold-local scaler fit membership was not completely audited")
+                    if any(record["role"] == "unregistered" for record in cache.fit_audit):
+                        raise ValueError("preprocessing was fitted on unregistered/non-training rows")
                     case_audit["models"][model_name] = report | dict(
                         threshold=threshold, validation_fpr=float(np.mean(validation_scores > threshold)),
                         score_std=float(np.std(scores)), collapsed_scores=bool(np.std(scores) < 1e-12),
                         fit_and_score_seconds=time.monotonic() - fit_started,
                         effective_gamma=getattr(model.best_estimator_, "_gamma", None),
-                        inner_cv=model.cv_results_)
+                        inner_cv=model.cv_results_,
+                        inner_preprocessing_folds=inner_preprocessing,
+                        outer_preprocessing=outer_preprocessing[0])
                     prediction[model_name + "_score"] = scores
                     prediction[model_name + "_threshold"] = threshold
+                    validation_prediction[model_name + "_score"] = validation_scores
+                    validation_prediction[model_name + "_threshold"] = threshold
                     for scope in ("target_family", "protocol_unknown"):
                         mask = (known | test["label"].eq(family).to_numpy()) if scope == "target_family" else np.ones(len(test), bool)
                         y = (~known[mask]).astype(int)
@@ -378,6 +423,7 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                                       budget=budget, n_configs_evaluated=report["n_configs_evaluated"],
                                       best_params=json.dumps(report["best_params"], sort_keys=True),
                                       n_train=len(train), n_val=len(val), n_test=int(mask.sum()),
+                                      n_known=int((y == 0).sum()), n_unknown=int((y == 1).sum()),
                                       positive_fraction=float(y.mean()))
                         rows.extend(common | dict(metric=metric, value=value) for metric, value in values.items())
                         display_tpr = np.interp(ROC_GRID, fpr, tpr)
@@ -394,38 +440,71 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                                 nearest = NearestNeighbors(n_neighbors=1).fit(X_train)
                             distances, positions = nearest.kneighbors(X_test[misses])
                             labels = train.iloc[positions[:, 0]]["label"].to_numpy()
+                            for event_position, distance, neighbor_position in zip(
+                                    np.flatnonzero(misses), distances[:, 0], positions[:, 0]):
+                                event = test.iloc[event_position]
+                                neighbor = train.iloc[neighbor_position]
+                                missed_events.append(dict(seed=seed, model=model_name, id=event["id"],
+                                    ifo=event["ifo"], run=event["run"], score=float(scores[event_position]),
+                                    threshold=threshold, nearest_known_id=neighbor["id"],
+                                    nearest_known_family=neighbor["label"], distance=float(distance)))
                             for label in np.unique(labels):
                                 selected = labels == label
                                 neighbors.append(dict(seed=seed, model=model_name, nearest_known_family=label,
                                                       missed_fast=int(selected.sum()),
                                                       mean_distance=float(distances[selected, 0].mean())))
+                for scope in ("target_family", "protocol_unknown"):
+                    target_mask = (known | test["label"].eq(family).to_numpy()) if scope == "target_family" else np.ones(len(test), bool)
+                    y_scope = (~known[target_mask]).astype(int)
+                    scores_scope = {name: prediction.loc[target_mask, name + "_score"].to_numpy(dtype=np.float64)
+                                    for name in MODELS}
+                    bootstrap_seed = event_bootstrap_seed(family, seed)
+                    metric_records, difference_records = paired_event_bootstrap(
+                        y_scope, scores_scope, n_resamples=event_bootstrap, seed=bootstrap_seed)
+                    event_rows.extend(dict(held_out=family, seed=seed, scope=scope,
+                                           bootstrap_seed=bootstrap_seed, **record)
+                                      for record in metric_records)
+                    event_differences.extend(dict(held_out=family, seed=seed, scope=scope,
+                                                  bootstrap_seed=bootstrap_seed, **record)
+                                             for record in difference_records)
+                if len({tuple(sorted(values.items())) for values in model_outer_ids.values()}) != 1:
+                    raise ValueError("the four models did not receive identical outer partition IDs")
+                case_audit["model_outer_id_sha256"] = model_outer_ids
                 fold_predictions.append(prediction)
+                fold_validation_scores.append(validation_prediction)
                 audit.append(case_audit)
                 manifest["completed_cases"] += 1
-                (out / "manifest.json").write_text(_json(manifest))
+                atomic_json(out / "manifest.json", manifest)
                 print(f"E03 {manifest['completed_cases']}/{len(seeds)*len(held_outs)}: {family}, seed={seed}, "
                       f"train/val/test={len(train)}/{len(val)}/{len(test)}", flush=True)
             _write_gzip(out / "predictions" / (family + ".csv.gz"), pd.concat(fold_predictions, ignore_index=True))
+            _write_gzip(out / "validation_scores" / (family + ".csv.gz"),
+                        pd.concat(fold_validation_scores, ignore_index=True))
         metrics = pd.DataFrame(rows)
         curves = pd.DataFrame(rocs)
         summary, paired = summarize(metrics, bootstrap=bootstrap)
         metrics.to_csv(out / "e03_metrics.csv", index=False)
         summary.to_csv(out / "e03_summary.csv", index=False)
         paired.to_csv(out / "e03_paired_differences.csv", index=False)
+        pd.DataFrame(event_rows).to_csv(out / "e03_event_bootstrap.csv", index=False)
+        pd.DataFrame(event_differences).to_csv(out / "e03_event_paired_differences.csv", index=False)
         _write_gzip(out / "roc_curves.csv.gz", curves)
         pd.DataFrame(family_counts).to_csv(out / "family_errors.csv", index=False)
         pd.DataFrame(neighbors, columns=["seed", "model", "nearest_known_family", "missed_fast", "mean_distance"]).to_csv(
             out / "neighbors_fast_misses.csv", index=False)
+        pd.DataFrame(missed_events, columns=["seed", "model", "id", "ifo", "run", "score", "threshold",
+                     "nearest_known_id", "nearest_known_family", "distance"]).to_csv(
+            out / "missed_fast_events.csv", index=False, float_format="%.17g")
         _write_gzip(out / "selected_ids.json.gz", selections)
-        (out / "audit.json").write_text(_json(audit))
+        (out / "audit.json").write_text(_json(audit), encoding="utf-8")
         _plot_rocs(curves, out)
         manifest.update(status="complete", finished_at=datetime.now(timezone.utc).isoformat(),
                         runtime_seconds=time.monotonic()-started, metric_rows=len(metrics),
-                        files={str(path.relative_to(out)): _hash(path) for path in sorted(out.rglob("*"))
-                               if path.is_file() and path.name != "manifest.json"})
-        (out / "manifest.json").write_text(_json(manifest))
+                        files={path.relative_to(out).as_posix(): _hash(path) for path in sorted(out.rglob("*"))
+                               if path.is_file() and path != out / "manifest.json"})
+        atomic_json(out / "manifest.json", manifest)
         return metrics
     except BaseException as error:
         manifest.update(status="failed", error=f"{type(error).__name__}: {error}")
-        (out / "manifest.json").write_text(_json(manifest))
+        atomic_json(out / "manifest.json", manifest)
         raise

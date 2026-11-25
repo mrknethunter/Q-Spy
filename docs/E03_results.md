@@ -1,4 +1,13 @@
-# E-03 — Risultati L0: Gravity Spy D-02 (issue #29)
+# E-03 — Prior reported L0 results (not revalidated after audit)
+
+> **Current status:** These figures are preserved from a prior run. The audit
+> found that its inner-CV folds reused a scaler fitted on the full outer
+> training set, so the tuning procedure was not leakage-safe. The current
+> checkout also lacks the eight saved prediction archives and
+> `selected_ids.json.gz` listed in its old manifest. The numerical tables and
+> physics diagnostics below are historical outputs, not validated results for
+> the corrected implementation. They must not be used as E-03 acceptance
+> evidence. No replacement real-data results are claimed in this report.
 
 ## Ambito della misura
 
@@ -143,12 +152,18 @@ Suite completa: **249 test e 190 subtest passati**; suite E-03 aggiornata: **14 
 
 Verifica indipendente dai file delle predizioni: **80 casi**, **3200 valori metrici** ricalcolati. Controllati hash degli output, appartenenza ai partition ID originali, esclusione delle famiglie sconosciute da TUTTO il train/validation P2, etichette del catalogo, test fisso fra seed, budget uguali e CI/differenze appaiate ricalcolate.
 
-La configurazione è resource-bounded e non include un'analisi di sensibilità ai cap o ai parametri del circuito. Gli intervalli sono condizionati al test e non includono l'incertezza della scelta del circuito, del dataset o delle etichette ML. Le rotazioni condividono dati e non sono otto dataset indipendenti. Le etichette sono quelle ML della release, non verità fisica verificata caso per caso.
+La configurazione è resource-bounded e non include un'analisi di sensibilità ai cap o ai parametri del circuito. Gli intervalli sono condizionati al test e non includono l'incertezza della scelta del circuito, del dataset o delle etichette ML. Le rotazioni condividono dati e non sono otto dataset indipendenti. Le etichette sono quelle ML d
 
-Metodo, comandi di riproduzione e significato di ogni output: [E03.md](E03.md). Suite di test e provenienza dello ZIP di base: [E03_validation.json](E03_validation.json).
+## Current review receipt — 2026-11-25
 
-## Riferimenti primari
+No numerical result above has been revalidated. All nine present manifest-listed
+outputs retain their historical hashes, but eight prediction archives and the
+selected-ID archive are absent. The old source fingerprints also differ from
+the supplied working tree. The corrected pipeline has no replacement real-data
+run: the dataset and pinned scientific environment are unavailable.
 
-1. Glanzer et al. (2023), *Data quality up to the third observing run of advanced LIGO: Gravity Spy glitch classifications*, [DOI 10.1088/1361-6382/acb633](https://doi.org/10.1088/1361-6382/acb633).
-
-2. Soni et al., *Modeling and Reduction of High Frequency Scatter Noise at LIGO Livingston*, [arXiv:2311.05730](https://arxiv.org/abs/2311.05730).
+The 18 passing integrity tests and the read-only 80-case D-04 membership check
+are narrower checks, not validation of these metrics, confidence intervals or
+physics diagnostics. See [E03_REVIEW_REPORT.md](E03_REVIEW_REPORT.md) and the
+current [E03_validation.json](E03_validation.json). Final status:
+**IMPLEMENTED — NOT VALIDATED**.

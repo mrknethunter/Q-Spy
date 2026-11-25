@@ -125,6 +125,7 @@ def test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle(tmp_path, mo
     result = e03.run_experiment(frame, seeds=[0, 1], held_outs=["Fast_Scattering", "Blip"],
                                 budget=1, cv_folds=2, n_qubits=7, layers=1, s=.3,
                                 max_train=32, max_val=32, max_test=64, bootstrap=20,
+                                event_bootstrap=40,
                                 split_dir=split_dir, artifact_dir=tmp_path / "out", store_bloch=False)
     assert len(result) == 4 * 4 * 2 * 5
     assert set(result["model"]) == set(e03.MODELS)
@@ -138,6 +139,10 @@ def test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle(tmp_path, mo
     audit = json.loads((out / "audit.json").read_text())
     assert all(case["full_partition_leakage_checked"] for case in audit)
     assert all(model["validation_fpr"] <= .01 for case in audit for model in case["models"].values())
+    assert all(len(model["inner_preprocessing_folds"]) == 2 for case in audit
+               for model in case["models"].values())
+    assert (out / "e03_event_bootstrap.csv").is_file()
+    assert (out / "e03_event_paired_differences.csv").is_file()
     with gzip.open(out / "selected_ids.json.gz", "rt") as file:
         selections = json.load(file)
     for family in ("Fast_Scattering", "Blip"):
@@ -158,6 +163,7 @@ def test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle(tmp_path, mo
     assert verified["metric_values_recalculated"] == len(result)
     assert verified["full_frozen_cases_checked"] == 4
     assert verified["scalers_refitted_from_selected_training"]
+    assert verified["event_bootstrap_recalculated"]
     assert "Nota fisica" in render_report(out, verified)
     # The report must refuse a changed score artifact, even if summary tables look fine.
     prediction_file = out / "predictions" / "Fast_Scattering.csv.gz"
@@ -178,6 +184,7 @@ def test_parallel_rotations_preserve_case_provenance_and_paired_metrics(tmp_path
     metrics = run_parallel(frame, workers=2, seeds=[0, 1], held_outs=["Fast_Scattering", "Blip"],
                            budget=1, cv_folds=2, n_qubits=7, layers=1, s=.3,
                            max_train=32, max_val=32, max_test=64, bootstrap=20,
+                           event_bootstrap=40,
                            split_dir=str(splits), artifact_dir=str(out), store_bloch=False)
     result = verify_results(out, splits)
     assert result["metric_values_recalculated"] == len(metrics) == 160

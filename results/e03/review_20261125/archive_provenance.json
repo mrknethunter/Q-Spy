@@ -1,0 +1,23 @@
+{
+  "archive": "C:\\Users\\Andrea\\Documents\\Qiskit\\Q_SPY.zip",
+  "sha256": "674cb90bdad8382ba0de2785ac872741b61aacbfb74b557a2f73abe937a27e47",
+  "linux_venv_distributions": [
+    "cloudpickle-3.1.3.dist-info",
+    "iniconfig-2.3.1.dist-info",
+    "joblib-1.6.0.dist-info",
+    "narwhals-2.29.0.dist-info",
+    "numpy-2.5.5.dist-info",
+    "packaging-26.3.dist-info",
+    "pandas-3.1.1.dist-info",
+    "pip-25.1.1.dist-info",
+    "pluggy-1.7.0.dist-info",
+    "pygments-2.21.0.dist-info",
+    "pytest-9.2.0.dist-info",
+    "python_dateutil-4.0.0.dist-info",
+    "scikit_learn-1.9.1.dist-info",
+    "scipy-1.18.1.dist-info",
+    "threadpoolctl-3.8.0.dist-info",
+    "tzdata-2026.6.dist-info"
+  ],
+  "extraction_note": "Project code, data assets, documentation and Git were extracted verbatim; Linux .venv extraction was interrupted and excluded from completion because it cannot serve as a Windows pinned runtime."
+}
