@@ -60,6 +60,66 @@ calcolabile prima di partire. Il prezzo è che il circuito è fisso: tutta la fl
 quantistica (kernel proiettato sui vettori di Bloch) e quella classica (RBF sulle 7 feature). Se il modello quantistico
 fa meglio a parità di tutto il resto, il merito è della geometria quantistica.
 
+\section{Il circuito, porta per porta}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\textwidth]{fig/feature_map_named.png}
+\caption{La feature map usata in tutto il progetto: 8 qubit, 2 strati. Ogni casella viola è una rotazione con
+l’angolo della feature indicata; i trattini blu sono porte CZ.}
+\label{fig:circuito}
+\end{figure}
+
+\textbf{Come leggere la figura~\ref{fig:circuito}.} Il tempo scorre da sinistra a destra; ogni riga è un qubit, che
+parte da $|0\rangle$ (il polo nord della sfera di Bloch).
+\begin{itemize}
+  \item \textbf{Assegnazione delle feature.} q0 riceve la SNR, q1 la frequenza di picco, q2 la frequenza centrale, q3 la
+  banda, q4 la durata, q5 il fattore Q, q6 l’ampiezza; q7 riusa la SNR, perché le feature sono 7 e i qubit 8.
+  \item \textbf{Rotazioni.} Ogni qubit riceve $R_Y(\theta)$ e poi $R_Z(\theta)$ con lo stesso angolo
+  $\theta=s\pi\tilde x$. $R_Y$ inclina il vettore di Bloch dal polo verso l’equatore, $R_Z$ lo fa girare attorno
+  all’asse verticale: insieme spostano il punto sulla sfera in due direzioni, quindi il valore della feature finisce sia
+  in $\langle Z\rangle$ sia in $\langle X\rangle$ e $\langle Y\rangle$. Con $s=0{,}1778$ e $\tilde x\in[-1,1]$ l’angolo
+  massimo è $0{,}56$\,rad (32°): gli stati restano vicini al polo, e infatti $\langle Z\rangle$ misurato è quasi sempre
+  vicino a 1.
+  \item \textbf{CZ a mattoni.} Dopo le rotazioni, una CZ su ogni coppia di qubit vicini: prima le coppie
+  (0,1), (2,3), (4,5), (6,7), poi (1,2), (3,4), (5,6). Le CZ commutano tra loro, quindi questo ordine dà lo stesso stato
+  di una catena qualsiasi ma in soli due “momenti”: la profondità a due qubit è 2 per strato.
+  \item \textbf{Secondo strato.} Le stesse rotazioni vengono ripetute (\emph{data re-uploading}) su qubit ormai
+  entangled: la rotazione di un qubit agisce su uno stato che dipende anche dalle feature dei vicini. È qui che il
+  vettore di Bloch di un qubit raccoglie informazione su più feature insieme.
+  \item \textbf{Misura.} Non c’è una misura nel disegno perché la fa la primitiva Estimator: per ogni glitch esegue tre
+  varianti del circuito, che misurano tutti i qubit lungo $Z$, lungo $X$ (con una porta di Hadamard prima) e lungo $Y$.
+  Ogni variante è ripetuta 1112 volte; la media dà $\langle X_q\rangle$, $\langle Y_q\rangle$, $\langle Z_q\rangle$ per
+  ognuno degli 8 qubit: 24 numeri.
+\end{itemize}
+
+\textbf{Perché questo circuito.} È il più semplice che usi tutte le feature, crei entanglement e resti poco profondo
+sull’hardware. Più strati non migliorano l’allineamento in E-01 (L = 4, 8) e aumentano il rumore.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{fig/transpiled.png}
+\caption{Lo stesso circuito per un glitch reale (\texttt{H1:0HBUW3SkZq}), compilato per \texttt{ibm\_kingston}.}
+\label{fig:transpiled}
+\end{figure}
+
+\textbf{Come leggere la figura~\ref{fig:transpiled}.} Il chip IBM Heron sa fare solo poche porte native: $\sqrt X$,
+rotazioni $R_Z$ e CZ. Il compilatore (Qiskit, livello di ottimizzazione 3) traduce ogni $R_Y$ in una sequenza
+$\sqrt X$--$R_Z$--$\sqrt X$ con angoli numerici (ora le feature del glitch sono numeri), sceglie 8 qubit fisici collegati
+in catena e li etichetta: il qubit logico 0 va sul fisico 55, l’1 sul 59, e così via fino al 70. Risultato: 32 $\sqrt X$,
+33 $R_Z$, 14 CZ, profondità 13, di cui 4 strati di CZ. Le $R_Z$ sul chip sono “virtuali” (un cambio di riferimento) e non
+aggiungono errore: il rumore viene soprattutto dalle 14 CZ e dalla lettura.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.45\textwidth]{fig/layout.png}
+\caption{I 156 qubit di \texttt{ibm\_kingston} (reticolo heavy-hex); in nero gli 8 usati nella campagna.}
+\end{figure}
+
+\textbf{La calibrazione del giorno} è salvata in ogni run hardware. Per gli 8 qubit usati: errore di lettura tra 0,32\%
+(qubit 59) e 3,72\% (qubit 72); errore delle CZ tra 0,10\% e 0,17\%; tempo di rilassamento $T_1$ tra 147 e 326\,$\mu$s,
+tempo di coerenza $T_2$ tra 84 e 444\,$\mu$s. Il circuito dura molto meno di $T_1$, per questo la decoerenza pesa poco.
+
 \section{Le regole: livelli, pre-registrazione, ipotesi}
 
 \subsection{Quattro livelli di realismo}
@@ -93,6 +153,54 @@ H4 & hardware: la KTA sul chip resta entro 0,02 da quella esatta & \textbf{suppo
 \bottomrule
 \end{tabularx}
 \end{center}
+
+\section{I benchmark in dettaglio}
+
+\textbf{L’idea del confronto.} Per sapere se il quantum aiuta, cambiamo una cosa sola: la geometria. Il modello
+quantistico e il suo avversario principale sono lo \emph{stesso algoritmo} (SVM per il few-shot, One-Class SVM per la
+novelty), una volta con il kernel proiettato sui vettori di Bloch e una volta con il kernel RBF sulle stesse 7 feature
+scalate. Accanto mettiamo metodi classici forti che non usano kernel, per non vincere contro un solo avversario debole.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+& \textbf{Few-shot (P1)} & \textbf{Novelty (P2)}\\
+\midrule
+Quantum & SVM sul kernel proiettato & One-Class SVM sul kernel proiettato\\
+Avversario diretto & SVM RBF sulle 7 feature & One-Class SVM RBF sulle 7 feature\\
+Altre baseline & SVM laplaciana, k-NN, gradient boosting, regressione logistica (in E-02) & Isolation Forest, LOF\\
+Taratura & stesso numero di configurazioni per tutti (16 nell’anteprima, 60 nel protocollo pre-registrato), CV annidata &
+famiglie note a turno come anomalie di prova; $\gamma=c/$mediana con 9 valori di $c$; soglia al 5\% di falsi allarmi\\
+Dati & $k=5,10,20,50$ per famiglia; 700 glitch di test; 5 seed (anteprima) & 8 famiglie a turno nascoste $\times$ 10 seed;
+fino a 2048 train, 2048 validazione, 8192 test\\
+Metriche & macro-F1, accuratezza bilanciata & AUROC, average precision, TPR all’1\% di falsi allarmi\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Le baseline, una per una.}
+\begin{itemize}
+  \item \textbf{SVM e One-Class SVM RBF}: stesso algoritmo, geometria gaussiana classica. È il confronto che isola
+  l’effetto del kernel quantistico, e il più duro: l’RBF è il kernel classico più usato perché funziona bene.
+  \item \textbf{SVM laplaciana}: come l’RBF ma con la distanza assoluta invece che quadratica; meno liscia.
+  \item \textbf{k-NN}: classifica guardando i $k$ glitch di training più vicini; nessun modello, solo distanze.
+  \item \textbf{Gradient boosting} (HistGradientBoosting): somma di alberi di decisione, il riferimento classico per dati
+  tabellari.
+  \item \textbf{Regressione logistica}: confine lineare; serve a capire quanto il problema sia già facile.
+  \item \textbf{Isolation Forest}: alberi casuali che isolano i punti; un punto anomalo si isola con pochi tagli.
+  \item \textbf{LOF}: confronta la densità attorno a un punto con quella dei suoi vicini.
+\end{itemize}
+
+\textbf{Cosa non confrontiamo, e perché.} Non confrontiamo con le reti di Gravity Spy, perché usano gli spettrogrammi
+(immagini) e non le 7 feature: sarebbe un confronto tra input diversi, non tra geometrie. Il nostro risultato dice se il
+kernel quantistico aiuta \emph{a parità di informazione}.
+
+\textbf{Perché il budget uguale conta.} Bowles et al.\ (2024) hanno mostrato che molti “vantaggi” del quantum ML
+spariscono quando le baseline classiche vengono tarate con la stessa cura. Per questo ogni modello prova lo stesso
+numero di configurazioni, e un test nel codice (\texttt{assert\_equal\_search\_budget}) blocca l’esperimento se non è
+così. Una deviazione dichiarata: nella novelty il budget è un tetto (OC-SVM 54, Isolation Forest 60, LOF 15) perché
+ripetere configurazioni equivalenti non aggiunge informazione; il confronto principale, proiettato contro RBF, è 54
+contro 54.
 
 \section{I risultati, figura per figura}
 
@@ -175,6 +283,20 @@ dell’hardware è 0,033 contro 0,030 del solo campionamento.”}
 corsa \texttt{hw-20261125T124523Z}. Una prima sottomissione (\texttt{hw-20261125T113624Z}) si è interrotta dopo
 \emph{main}: la usiamo come ripetizione indipendente. Analisi: \texttt{experiments/h02\_analysis.py}, che legge solo lo
 store.
+
+\textbf{Quali glitch abbiamo misurato.} 260 glitch scelti in modo deterministico e congelati prima della campagna
+(D-05, hash \texttt{7fee3e50}), tutti dal test di O3b dello split P2 e quindi mai usati in training o validazione.
+\emph{main}: 120 glitch, 15 per ognuna delle 8 famiglie, metà da Hanford e metà da Livingston. \emph{control}: 40 glitch,
+5 per famiglia, misurati senza mitigazione. \emph{concentration}: tre gruppi disgiunti da 30 glitch (circa 4 per
+famiglia), misurati a 4, 8 e 12 qubit. \emph{drift}: 5 glitch misurati all’inizio e di nuovo alla fine. In tutto 780
+circuiti da 1112 shot, cioè circa 867 mila esecuzioni, in 7 job tra le 13:45 e le 13:54 del 25 novembre.
+
+\textbf{Cosa c’è nello store.} Per ogni esperimento e livello (L0, L2, HW) una cartella
+\texttt{store/runs/hw-20261125T124523Z-<esperimento>-<livello>/} con tre file: \texttt{B.npy}, una matrice
+$N\times n\times3$ di vettori di Bloch; \texttt{ids.json}, gli identificativi Gravity Spy dei glitch nello stesso
+ordine; \texttt{meta.json}, con configurazione, ID del job IBM, secondi QPU, qubit fisici, mitigazione, profondità,
+calibrazione del giorno e commit del codice. Le etichette delle famiglie non vanno mai sul chip: servono solo dopo, per
+calcolare KTA e AUROC.
 
 \begin{table}[H]
 \centering\small
