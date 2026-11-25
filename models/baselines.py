@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Classical baseline models and factory registry (M-04)."""
 
 from __future__ import annotations
 
@@ -9,26 +8,17 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import HistGradientBoostingClassifier, IsolationForest
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics.pairwise import laplacian_kernel
 from sklearn.neighbors import KNeighborsClassifier, LocalOutlierFactor
 from sklearn.svm import OneClassSVM, SVC
 
-try:
-    from kernels.classical import laplacian_kernel
-except ImportError:
-    from sklearn.metrics.pairwise import laplacian_kernel
+from models.base import BaseBudgetedModel, BaseFewShotBaseline, BaseNoveltyBaseline
 
-from models.base import (
-    GAMMA_GRID,
-    BaseBudgetedModel,
-    BaseFewShotBaseline,
-    BaseNoveltyBaseline,
-    resolve_gamma,
-)
-
-# -----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
 # Few-Shot classifiers
-# -----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
 
+# SVM with RBF kernel
 
 class RBFSVMBaseline(BaseFewShotBaseline):
     """Support Vector Classifier with RBF kernel and One-vs-Rest strategy."""
@@ -38,7 +28,7 @@ class RBFSVMBaseline(BaseFewShotBaseline):
     def _param_grid(self) -> dict[str, list[Any]]:
         return {
             "C": [1e-2, 1e-1, 1.0, 10.0, 100.0],
-            "gamma": list(GAMMA_GRID),
+            "gamma": ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0],
         }
 
     def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
@@ -50,9 +40,11 @@ class RBFSVMBaseline(BaseFewShotBaseline):
             random_state=self.seed,
         )
 
+# SVM with Laplacian kernel
+# Scikit-learn doesn't natively support Laplacian, this is a wrapper class for the Laplacian kernel
 
 class _LaplacianSVC(BaseEstimator, ClassifierMixin):
-    """Scikit-learn compatible SVC wrapper using `kernels.classical.laplacian_kernel`."""
+    """Scikit-learn compatible SVC wrapper using an exact Laplacian kernel."""
 
     def __init__(
         self,
@@ -64,9 +56,18 @@ class _LaplacianSVC(BaseEstimator, ClassifierMixin):
         self.gamma = gamma
         self.random_state = random_state
 
+    def _resolve_gamma(self, X: np.ndarray) -> float:
+        n_features = X.shape[1]
+        if self.gamma is None or self.gamma == "auto":
+            return 1.0 / n_features
+        if self.gamma == "scale":
+            x_var = float(np.var(X))
+            return 1.0 / (n_features * x_var) if x_var > 0.0 else 1.0 / n_features
+        return float(self.gamma)
+
     def fit(self, X: np.ndarray, y: np.ndarray) -> _LaplacianSVC:
         self.X_train_ = np.asarray(X, dtype=np.float64)
-        self.gamma_ = resolve_gamma(self.X_train_, self.gamma)
+        self.gamma_ = self._resolve_gamma(self.X_train_)
         K_train = laplacian_kernel(self.X_train_, self.X_train_, gamma=self.gamma_)
         self.svc_ = SVC(
             kernel="precomputed",
@@ -79,11 +80,15 @@ class _LaplacianSVC(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        K_test = laplacian_kernel(np.asarray(X, dtype=np.float64), self.X_train_, gamma=self.gamma_)
+        K_test = laplacian_kernel(
+            np.asarray(X, dtype=np.float64), self.X_train_, gamma=self.gamma_
+        )
         return self.svc_.predict(K_test)
 
     def decision_function(self, X: np.ndarray) -> np.ndarray:
-        K_test = laplacian_kernel(np.asarray(X, dtype=np.float64), self.X_train_, gamma=self.gamma_)
+        K_test = laplacian_kernel(
+            np.asarray(X, dtype=np.float64), self.X_train_, gamma=self.gamma_
+        )
         return self.svc_.decision_function(K_test)
 
 
@@ -95,7 +100,7 @@ class LaplacianSVMBaseline(BaseFewShotBaseline):
     def _param_grid(self) -> dict[str, list[Any]]:
         return {
             "C": [1e-2, 1e-1, 1.0, 10.0, 100.0],
-            "gamma": list(GAMMA_GRID),
+            "gamma": ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0],
         }
 
     def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
@@ -106,8 +111,11 @@ class LaplacianSVMBaseline(BaseFewShotBaseline):
         )
 
 
+# k-Nearest Neighbors (kNN)
+
+
 class _SafeKNeighborsClassifier(BaseEstimator, ClassifierMixin):
-    """KNeighborsClassifier wrapper clamping n_neighbors to the training fold size."""
+    """KNeighborsClassifier wrapper that clamps n_neighbors to the training fold size."""
 
     def __init__(
         self,
@@ -158,6 +166,8 @@ class KNNBaseline(BaseFewShotBaseline):
         )
 
 
+# Logistic Regression
+
 class LogisticRegressionBaseline(BaseFewShotBaseline):
     """Multinomial Logistic Regression with L2 regularization C in the search budget."""
 
@@ -179,6 +189,8 @@ class LogisticRegressionBaseline(BaseFewShotBaseline):
             random_state=self.seed,
         )
 
+
+# Histogram Gradient Boosting
 
 class HistGradientBoostingBaseline(BaseFewShotBaseline):
     """Histogram-based Gradient Boosting with low min_samples_leaf for k-shot regimes."""
@@ -206,10 +218,11 @@ class HistGradientBoostingBaseline(BaseFewShotBaseline):
         )
 
 
-# -----------------------------------------------------------------------------------------------
-# Novelty detectors
-# -----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
+# NOVELTY classifiers
+#-----------------------------------------------------------------------------------------------
 
+# RBF One-Class SVM
 
 class RBFOCSVMBaseline(BaseNoveltyBaseline):
     """One-Class SVM with RBF kernel tuning nu and gamma on known families."""
@@ -219,7 +232,7 @@ class RBFOCSVMBaseline(BaseNoveltyBaseline):
     def _param_grid(self) -> dict[str, list[Any]]:
         return {
             "nu": [0.01, 0.05, 0.1, 0.15, 0.2],
-            "gamma": list(GAMMA_GRID),
+            "gamma": ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0],
         }
 
     def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
@@ -230,12 +243,15 @@ class RBFOCSVMBaseline(BaseNoveltyBaseline):
         )
 
 
+# Isolation Forest
+
 class IsolationForestBaseline(BaseNoveltyBaseline):
     """Isolation Forest novelty detector tuned strictly on known families."""
 
     model_name = "isolation_forest"
 
     def _param_grid(self) -> dict[str, list[Any]]:
+        # >>> MODIFICA QUI I PARAMETRI PER GIOCARE CON ISOLATION FOREST <<<
         return {
             "n_estimators": [100, 200, 300],
             "max_samples": ["auto", 0.5, 0.75, 1.0],
@@ -254,6 +270,8 @@ class IsolationForestBaseline(BaseNoveltyBaseline):
             random_state=self.seed,
         )
 
+
+# Local Outlier Factor
 
 class _SafeLocalOutlierFactor(BaseEstimator):
     """LocalOutlierFactor (novelty=True) wrapper clamping n_neighbors to fold size."""
@@ -308,16 +326,17 @@ class LOFBaseline(BaseNoveltyBaseline):
 
 
 BASELINE_REGISTRY: dict[str, type[BaseBudgetedModel]] = {
+    # Few-shot classifiers
     "rbf_svm": RBFSVMBaseline,
     "laplacian_svm": LaplacianSVMBaseline,
     "knn": KNNBaseline,
     "logistic_regression": LogisticRegressionBaseline,
     "hist_gradient_boosting": HistGradientBoostingBaseline,
+    # Novelty detectors
     "rbf_ocsvm": RBFOCSVMBaseline,
     "isolation_forest": IsolationForestBaseline,
     "lof": LOFBaseline,
 }
-
 
 def build_baseline(
     name: str,
