@@ -477,7 +477,7 @@ def test_build_report_requests_live_tag_validation_for_d05(monkeypatch, tmp_path
 
     monkeypatch.setattr(e05_analysis, "load_hardware_subsets", fake_load_hardware_subsets)
     e05_analysis.build_report(store_root=tmp_path / "empty-store")
-    assert seen["freeze_repo"] == Path(__file__).resolve().parents[2]
+    assert seen["freeze_repo"] == Path(__file__).resolve().parents[1]
 
 
 def test_unfrozen_gamma_is_a_blocker_not_a_cli_override():
@@ -569,14 +569,14 @@ def test_actual_g03_integration_when_dependency_is_available(tmp_path, dtype):
 
 
 def test_current_l05_decision_is_not_approved_by_tag_alone():
-    repository_root = Path(__file__).resolve().parents[2]
+    repository_root = Path(__file__).resolve().parents[1]
     state, detail = inspect_l05_approval(repository_root)
     assert state == "pending"
     assert "draft for lead approval" in detail
 
 
 def test_current_d05_binding_does_not_imply_final_acceptance():
-    repository_root = Path(__file__).resolve().parents[2]
+    repository_root = Path(__file__).resolve().parents[1]
     state, detail = inspect_d05_approval(repository_root)
     assert state == "pending"
     assert "review proposal" in detail
