@@ -1,5 +1,5 @@
 # Contributing to Q-Spy
-Created by Mirko Mangano, Reda Brucato,Andrea Favata, Michele Bellavia, Leonardo Mirabella¶
+Created by Mirko Mangano, Reda Brucato, Andrea Favata, Michele Bellavia, Leonardo Mirabella
 
 ## Workflow
 
