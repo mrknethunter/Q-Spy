@@ -1,0 +1,66 @@
+{
+  "status": "pass",
+  "experiment": "E-03",
+  "protocol": "P2",
+  "tier": "L0",
+  "replay_manifest_sha256": "50c61dc75a44ad5846d41dd2a24903d2d77e5cf75dcd6a148994133fe4caedcc",
+  "package_source_sha256": "7951d4a524640e5c0c3f83491d062287ccc840cd8edcaa87005d1f0911be431e",
+  "verified_original_files": 270,
+  "packages": [
+    {
+      "file": "loco_1125-tables.zip",
+      "bytes": 21126491,
+      "sha256": "c4aacc1a4e9345bdaeb6993d0f3388c4be45f198a3dfc7ce8d2a0f14b017772b",
+      "members": 14
+    },
+    {
+      "file": "loco_1125-Fast_Scattering.zip",
+      "bytes": 28323978,
+      "sha256": "a505a52658c8aef014ae37d6f158dfeee7dfe310dd52270bf52c5079d473d5c3",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Blip.zip",
+      "bytes": 28222622,
+      "sha256": "e94a8cc5e866c8389e4979dfc4b808de7f9b016acc6ace205bbfb53647344e50",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Extremely_Loud.zip",
+      "bytes": 27875822,
+      "sha256": "bef394c611aa62df289d11cebebc98be06d25a1337887ff452cc74613ab65aa8",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Koi_Fish.zip",
+      "bytes": 28286444,
+      "sha256": "9de0694a34a63f483cfaad02c1d2d57bb83f9a24b449e5c52c182ed354c0149b",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Low_Frequency_Burst.zip",
+      "bytes": 28107627,
+      "sha256": "e1beb0d65577e2811ba3b0119055ba00bf0f18997b6aa89b50c0207984ded33e",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Low_Frequency_Lines.zip",
+      "bytes": 28445950,
+      "sha256": "276492b0f5d1680f0234e82d6623c0c53fa4ca887b5d9d655e88e6d8f6dafc71",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Scattered_Light.zip",
+      "bytes": 27904727,
+      "sha256": "b0dd92929c51a0ad09da2c7a7a1f617a759ec85fc29ebf71a9129cc19aeb4f65",
+      "members": 32
+    },
+    {
+      "file": "loco_1125-Tomte.zip",
+      "bytes": 28052738,
+      "sha256": "6ff7c81cf77928083f8932c822a2ed8ca94e99d03e12e728b1c5c86a33db3e23",
+      "members": 32
+    }
+  ],
+  "extraction": "Extract all nine ZIPs into the same new directory, then run experiments.e03_report."
+}

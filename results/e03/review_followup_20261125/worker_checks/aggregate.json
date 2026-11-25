@@ -1,0 +1,21 @@
+{
+  "all_result_hashes_checked": true,
+  "equal_budgets_checked": true,
+  "event_bootstrap_recalculated": true,
+  "fixed_test_across_seeds_checked": true,
+  "full_frozen_cases_checked": 80,
+  "full_partition_class_exclusion_checked": true,
+  "hyperparameter_candidates_folds_calibration_and_winner_checked": true,
+  "manifest_sha256": "50c61dc75a44ad5846d41dd2a24903d2d77e5cf75dcd6a148994133fe4caedcc",
+  "metric_values_recalculated": 3200,
+  "models_per_case": 4,
+  "orchestration_sha256": "0c799ce00945ec811cf110f05602bb8181e0df228160ce591b78f16a2c1b6217",
+  "paired_bootstrap_recalculated": true,
+  "scalers_refitted_from_selected_training": true,
+  "selected_ids_and_labels_checked": true,
+  "source_hashes_checked": true,
+  "status": "pass",
+  "validation_thresholds_recalculated": true,
+  "verification": "canonical_worker_recalculation_and_exact_aggregate_equality",
+  "verifier_sha256": "10625b31053263f9adc0fe414ada984a8c10d744c5f02347c0b6516319b3b116"
+}

@@ -1,0 +1,20 @@
+{
+  "all_result_hashes_checked": true,
+  "curated_csv_sha256": "b2a44119c5b8368a7bb5d129bb272524fbb2ac9d677223fc9f4efb720a857fbc",
+  "equal_budgets_checked": true,
+  "event_bootstrap_recalculated": true,
+  "fixed_test_across_seeds_checked": true,
+  "full_frozen_cases_checked": 10,
+  "full_partition_class_exclusion_checked": true,
+  "hyperparameter_candidates_folds_calibration_and_winner_checked": true,
+  "manifest_sha256": "4cb61d1f7c596c3cf994420762278540cc6ca459c76dc24d5a478e00f737807f",
+  "metric_values_recalculated": 400,
+  "models_per_case": 4,
+  "paired_bootstrap_recalculated": true,
+  "scalers_refitted_from_selected_training": true,
+  "selected_ids_and_labels_checked": true,
+  "source_hashes_checked": true,
+  "status": "pass",
+  "validation_thresholds_recalculated": true,
+  "verifier_sha256": "10625b31053263f9adc0fe414ada984a8c10d744c5f02347c0b6516319b3b116"
+}

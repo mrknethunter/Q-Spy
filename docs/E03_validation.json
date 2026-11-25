@@ -1,184 +1,279 @@
 {
   "task": "E-03",
-  "status": "IMPLEMENTED — NOT VALIDATED",
+  "status": "IMPLEMENTED — VALIDATED",
+  "validation_scope": "technical, resource-bounded 80-case replay; formal H3 acceptance remains subject to documented preregistration budget deviation",
   "review_date": "2026-11-25",
-  "initial_branch": "E-03-task",
-  "final_branch": "E-03-task-review",
-  "head": "b9800bd566c83cb451c725f518cae3edd89071cf",
-  "branch_change_authorization": "User explicitly requested a new branch for E-03 after the original brief.",
-  "scientific_validation": "not performed; pinned runtime and raw/curated features unavailable",
-  "tests": {
-    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
-    "executable": "C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\\dependencies\\python\\python.exe",
-    "versions": {
-      "numpy": "2.3.5",
-      "pandas": "3.0.1",
-      "scikit-learn": null,
-      "qiskit": null,
-      "qiskit-aer": null,
-      "pytest": null,
-      "matplotlib": null,
-      "PyYAML": null
-    },
-    "commands": {
-      "integrity_unittest": {
-        "command": [
-          "C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\\dependencies\\python\\python.exe",
-          "-B",
-          "-m",
-          "unittest",
-          "tests.test_e03_integrity",
-          "-v"
-        ],
-        "exit_code": 0,
-        "seconds": 0.7826082999818027,
-        "tests_run": 18,
-        "passed": 18,
-        "failed": 0,
-        "skipped": 0,
-        "log_sha256": "63a04057a1286b84318366a321b77695466233702f3b1fd2fe1790bea95cadc2"
-      },
-      "scientific_pytest": {
-        "command": [
-          "C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\\dependencies\\python\\python.exe",
-          "-B",
-          "-m",
-          "pytest",
-          "-q",
-          "tests/test_e03.py",
-          "tests/test_e03_metrics.py",
-          "tests/test_e03_preprocessing.py",
-          "tests/test_e03_review.py"
-        ],
-        "exit_code": 1,
-        "seconds": 0.03351239999756217,
-        "log_sha256": "33192c7109803c8a6413b816ba3c08f15a94b15144b8c28a96f5332edbc02d36"
-      }
-    },
-    "test_function_counts": {
-      "tests/test_e03.py": 11,
-      "tests/test_e03_integrity.py": 18,
-      "tests/test_e03_metrics.py": 4,
-      "tests/test_e03_preprocessing.py": 2,
-      "tests/test_e03_review.py": 5
-    }
-  },
+  "branch": "E-03-task-review",
   "scientific_tests": {
-    "attempted": true,
-    "collected": 0,
-    "executed": 0,
-    "passed": 0,
+    "passed": 135,
+    "subtests_passed": 29,
     "failed": 0,
-    "skipped": 0,
-    "invocation_exit_code": 1,
-    "reason": "No pytest in bundled runtime; sklearn/Qiskit/Aer also absent. No packages installed."
+    "future_warnings_are_errors": true,
+    "log": "results/e03/review_followup_20261125/scientific_final.log",
+    "log_sha256": "a862d552813e08178d16c2a5809bc29e6dae41d5f32f0bd232e4096565d7d097"
   },
-  "frozen_p2_membership_check": {
+  "parallel_validation_regression": {
+    "passed": 1,
+    "failed": 0,
+    "log": "results/e03/review_followup_20261125/parallel_validation_test_final.log",
+    "log_sha256": "8118acd1414c46f746bb5496ecab6a09cc10e5dffdad51da0f694d9f88efb7b8"
+  },
+  "post_metadata_provenance_smoke": {
+    "passed": 1,
+    "repeats_existing_test": true,
+    "log": "results/e03/review_followup_20261125/provenance_smoke.log"
+  },
+  "independent_verification": {
+    "all_result_hashes_checked": true,
+    "equal_budgets_checked": true,
+    "event_bootstrap_recalculated": true,
+    "fixed_test_across_seeds_checked": true,
+    "full_frozen_cases_checked": 80,
+    "full_partition_class_exclusion_checked": true,
+    "hyperparameter_candidates_folds_calibration_and_winner_checked": true,
+    "manifest_sha256": "50c61dc75a44ad5846d41dd2a24903d2d77e5cf75dcd6a148994133fe4caedcc",
+    "metric_values_recalculated": 3200,
+    "models_per_case": 4,
+    "orchestration_sha256": "0c799ce00945ec811cf110f05602bb8181e0df228160ce591b78f16a2c1b6217",
+    "paired_bootstrap_recalculated": true,
+    "scalers_refitted_from_selected_training": true,
+    "selected_ids_and_labels_checked": true,
+    "source_hashes_checked": true,
     "status": "pass",
-    "scope": "frozen full P2 partition membership only; no fitting or metric validation",
-    "cases_checked": 80,
-    "families": 8,
-    "catalog_rows": 318801,
-    "numpy": "2.3.5",
-    "pandas": "3.0.1",
-    "runtime": "bundled Python 3.12; not project-pinned scientific environment",
-    "seconds": 28.047607999993488
+    "validation_thresholds_recalculated": true,
+    "verification": "canonical_worker_recalculation_and_exact_aggregate_equality",
+    "verifier_sha256": "10625b31053263f9adc0fe414ada984a8c10d744c5f02347c0b6516319b3b116"
   },
-  "historical_artifacts": {
-    "prior_manifest_status": "complete",
-    "missing_outputs": [
-      "predictions/Blip.csv.gz",
-      "predictions/Extremely_Loud.csv.gz",
-      "predictions/Fast_Scattering.csv.gz",
-      "predictions/Koi_Fish.csv.gz",
-      "predictions/Low_Frequency_Burst.csv.gz",
-      "predictions/Low_Frequency_Lines.csv.gz",
-      "predictions/Scattered_Light.csv.gz",
-      "predictions/Tomte.csv.gz",
-      "selected_ids.json.gz"
-    ],
-    "changed_outputs": [],
-    "matching_output_count": 9,
-    "source_differences_from_historical_run": [
-      "experiments/e03_novelty.py",
-      "experiments/e03_parallel.py",
-      "models/baselines.py"
-    ],
-    "independent_metric_recalculation": "blocked: missing predictions and selected IDs",
-    "curated_csv_exists": false,
-    "raw_dir_exists": false,
-    "historical_table_rows": 3200,
-    "historical_table_models": [
-      "isolation_forest",
-      "lof",
-      "projected_ocsvm",
-      "rbf_ocsvm"
-    ],
-    "historical_table_seeds": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
-    ],
-    "historical_table_family_count": 8,
-    "historical_audit_cases": 80,
-    "note": "Counts inspect historical table structure; none of its metrics were recalculated from predictions."
+  "runtime": {
+    "python": "3.12.14",
+    "pinned_requirements_match": true,
+    "pinned_packages": {
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.7.2",
+      "matplotlib": "3.10.9",
+      "PyYAML": "6.0.3",
+      "qiskit": "2.6.2",
+      "qiskit-aer": "0.17.2",
+      "qiskit-ibm-runtime": "0.52.1",
+      "qiskit-machine-learning": "0.9.1",
+      "pytest": "9.2.0"
+    },
+    "installed_distributions": {
+      "annotated-types": "0.8.0",
+      "antlr4-python3-runtime": "4.13.2",
+      "certifi": "2026.11.20",
+      "cffi": "2.1.1",
+      "charset-normalizer": "3.5.3",
+      "cloudpickle": "3.1.3",
+      "colorama": "0.4.6",
+      "contourpy": "1.4.0",
+      "cryptography": "50.0.2",
+      "cycler": "0.12.1",
+      "dill": "0.4.1",
+      "fonttools": "4.68.0",
+      "ibm-cloud-sdk-core": "3.28.2",
+      "ibm-platform-services": "0.77.2",
+      "ibm-quantum-schemas": "0.13.20261016",
+      "idna": "3.20",
+      "iniconfig": "2.3.1",
+      "joblib": "1.6.0",
+      "kiwisolver": "1.5.1",
+      "matplotlib": "3.10.9",
+      "numpy": "2.2.6",
+      "openqasm3": "1.0.2",
+      "orjson": "3.13.0",
+      "packaging": "26.4",
+      "pandas": "2.3.3",
+      "pillow": "13.0.0",
+      "pluggy": "1.7.0",
+      "psutil": "7.2.2",
+      "pybase64": "1.5.2",
+      "pycparser": "3.12",
+      "pydantic": "2.14.4",
+      "pydantic_core": "2.50.5",
+      "Pygments": "2.21.0",
+      "PyJWT": "2.15.1",
+      "pyparsing": "3.3.3",
+      "pyspnego": "0.12.4",
+      "pytest": "9.2.0",
+      "python-dateutil": "3.0.0",
+      "pytz": "2026.6",
+      "PyYAML": "6.0.3",
+      "qiskit": "2.6.2",
+      "qiskit-aer": "0.17.2",
+      "qiskit-ibm-runtime": "0.52.1",
+      "qiskit-machine-learning": "0.9.1",
+      "qiskit-mitigation": "0.1.1",
+      "qiskit-qasm3-import": "0.6.0",
+      "requests": "2.34.2",
+      "requests_ntlm": "1.3.0",
+      "rustworkx": "0.18.1",
+      "samplomatic": "0.21.0",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.18.1",
+      "setuptools": "84.2.1",
+      "six": "1.17.0",
+      "sspilib": "0.6.0",
+      "stevedore": "5.10.0",
+      "threadpoolctl": "3.8.0",
+      "typing_extensions": "4.16.0",
+      "typing-inspection": "0.4.5",
+      "tzdata": "2026.6",
+      "urllib3": "2.8.0"
+    },
+    "current_source_sha256": {
+      "data/curate.py": "7231817a6c70a182e8a5070a55579ee6f511ecedd9dfa65d99bdde1c1c3cebaa",
+      "data/splits.py": "6851d0f52c87914d1421b7df93401fa7aee8755f40a7094dde866888927d5a55",
+      "data/manifest.json": "e24fc84538d2957c889762448300ab9f9ec1261cb11c64e8eca32008536bab6c",
+      "data/download.py": "6aa87381a7db5d15a5f326be82e5dcfc3e4b86c62544105782fa4b6aca907b63",
+      "data/profile.py": "1b9afbe65364b3919d5ec5f31590a279f645e299cf3068ad08e7b7967ae8eee0",
+      "features/transforms.py": "222aca08c6f77157b84bf323b19fb9d3053ba1fee1b5f25da8beb2ef4e1560a8",
+      "models/base.py": "c5f28d262f7c1111536c723387e51082a13d4caa03a525139a76bcd028e4537d",
+      "models/baselines.py": "bf1751848864cd0977f9087cca58a65d666470ccf98f9536c10f24c787bc9e82",
+      "kernels/projected.py": "b5b59747fb779aba26cab5983db9a3ed4edd5f8ec862ddfc9e492b83cf4a44f1",
+      "quantum/embed.py": "0bd625260d3c3aa7cc04094f63c72eb9e8d8af7d58c37799251dca4ace2855bd",
+      "quantum/feature_map.py": "cf02d83b96e2b1871af70f5ee0619747e347e531b73d307d4fe6d9ad98e9a53a",
+      "quantum/observables.py": "66f265444cda99f559977e328484e24856c31b78090b1c1e8f0f15b9019d83a7",
+      "store/io.py": "f5675f45911b44c005df0f8a4315b0af44231e03aaa687d2f153cdaf4dfe0d6b",
+      "experiments/run.py": "f96abe3be0f9810a1c867d8a3663276be98bf9964b0af9bc5419af84148dbb0e",
+      "experiments/e03_novelty.py": "5b6618987c6d6383a9eaafbdae645e669c68f324f4cb52eeb2ca8a6bf7a8378a",
+      "experiments/e03_preprocessing.py": "ad66333c6492e520ecb19cb231b7e75f24717fb1738a60d8f8c83a4f7fdb3d73",
+      "experiments/e03_metrics.py": "e3e6fe5ab69b5498b2d30a066eb11f8d6a6612ca30e37901ea6606299f196d32",
+      "experiments/e03_parallel.py": "3ea2479d798c69be16352ece6de01785735795ac25373e4b0baa13a04002afd9",
+      "experiments/e03_report.py": "10625b31053263f9adc0fe414ada984a8c10d744c5f02347c0b6516319b3b116",
+      "experiments/e03_integrity.py": "45afa76099a13a83d5aa3879e06b0844dcb3ce5ca41b627746b4ef409c953116",
+      "experiments/e03_tuning.py": "21464e20c8da9e0a2ecc4928837d69bdc997bbc6ffe357fe8863b6f0a4c695bc",
+      "experiments/rq4/e03_gravityspy.yaml": "8f549a08483764294f162dee110f7a284439d0eae165ac3f46cd54fb3071d26c",
+      "configs/hardware_frozen.yaml": "92048ca1de2201e5e2c30307b3c8906b9422f5b5733c3075ef358af0a18c852b",
+      "docs/contracts.md": "58c1817c304a2cb8668dc644c4de1d1bd7d905ad98516515093b5b1bdb84bef5",
+      "requirements.txt": "d1c91bff8eaaa0a060984936cd211db6c5c611416491769f23c155ea28cfc448"
+    },
+    "curated_csv_sha256": "b2a44119c5b8368a7bb5d129bb272524fbb2ac9d677223fc9f4efb720a857fbc",
+    "frozen_dataset_sha256": "c8bb3d84efa5b583ee41d671ae195b73bb5cdf901e3af03e351e1e3eac0260f1",
+    "curated_rows": 318801,
+    "followup_issue": "https://github.com/mrknethunter/Q-Spy/issues/75"
   },
-  "full_experiment": {
-    "status": "not run",
-    "requested_rotations": 8,
-    "requested_seeds": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
+  "experiment": {
+    "directory": "results/e03/loco_1125",
+    "status": "complete",
+    "completed_cases": 80,
+    "metric_rows": 3200,
+    "runtime_seconds": 3632.344000000041,
+    "settings": {
+      "bootstrap": 5000,
+      "bootstrap_seed": 29,
+      "budget": 9,
+      "cv_folds": 3,
+      "embed_batch_size": 512,
+      "embed_config": {
+        "entangle": true,
+        "layers": 2,
+        "n_qubits": 8,
+        "s": 0.1778
+      },
+      "event_bootstrap": 1000,
+      "held_outs": [
+        "Fast_Scattering",
+        "Blip",
+        "Extremely_Loud",
+        "Koi_Fish",
+        "Low_Frequency_Burst",
+        "Low_Frequency_Lines",
+        "Scattered_Light",
+        "Tomte"
+      ],
+      "max_test": 8192,
+      "max_train": 2048,
+      "max_val": 2048,
+      "sampling": "proportional_label_detector_min_one_SHA256",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "store_bloch": true,
+      "test_seed": 2026,
+      "workers": 4
+    },
+    "manifest_sha256": "50c61dc75a44ad5846d41dd2a24903d2d77e5cf75dcd6a148994133fe4caedcc"
+  },
+  "lossless_publication": {
+    "status": "pass",
+    "experiment": "E-03",
+    "protocol": "P2",
+    "tier": "L0",
+    "replay_manifest_sha256": "50c61dc75a44ad5846d41dd2a24903d2d77e5cf75dcd6a148994133fe4caedcc",
+    "package_source_sha256": "7951d4a524640e5c0c3f83491d062287ccc840cd8edcaa87005d1f0911be431e",
+    "verified_original_files": 270,
+    "packages": [
+      {
+        "file": "loco_1125-tables.zip",
+        "bytes": 21126491,
+        "sha256": "c4aacc1a4e9345bdaeb6993d0f3388c4be45f198a3dfc7ce8d2a0f14b017772b",
+        "members": 14
+      },
+      {
+        "file": "loco_1125-Fast_Scattering.zip",
+        "bytes": 28323978,
+        "sha256": "a505a52658c8aef014ae37d6f158dfeee7dfe310dd52270bf52c5079d473d5c3",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Blip.zip",
+        "bytes": 28222622,
+        "sha256": "e94a8cc5e866c8389e4979dfc4b808de7f9b016acc6ace205bbfb53647344e50",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Extremely_Loud.zip",
+        "bytes": 27875822,
+        "sha256": "bef394c611aa62df289d11cebebc98be06d25a1337887ff452cc74613ab65aa8",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Koi_Fish.zip",
+        "bytes": 28286444,
+        "sha256": "9de0694a34a63f483cfaad02c1d2d57bb83f9a24b449e5c52c182ed354c0149b",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Low_Frequency_Burst.zip",
+        "bytes": 28107627,
+        "sha256": "e1beb0d65577e2811ba3b0119055ba00bf0f18997b6aa89b50c0207984ded33e",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Low_Frequency_Lines.zip",
+        "bytes": 28445950,
+        "sha256": "276492b0f5d1680f0234e82d6623c0c53fa4ca887b5d9d655e88e6d8f6dafc71",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Scattered_Light.zip",
+        "bytes": 27904727,
+        "sha256": "b0dd92929c51a0ad09da2c7a7a1f617a759ec85fc29ebf71a9129cc19aeb4f65",
+        "members": 32
+      },
+      {
+        "file": "loco_1125-Tomte.zip",
+        "bytes": 28052738,
+        "sha256": "6ff7c81cf77928083f8932c822a2ed8ca94e99d03e12e728b1c5c86a33db3e23",
+        "members": 32
+      }
     ],
-    "models": 4,
-    "budget_per_model": 8,
-    "cv_folds": 3
+    "extraction": "Extract all nine ZIPs into the same new directory, then run experiments.e03_report."
   },
-  "current_source_sha256": {
-    "data/curate.py": "7231817a6c70a182e8a5070a55579ee6f511ecedd9dfa65d99bdde1c1c3cebaa",
-    "data/splits.py": "6851d0f52c87914d1421b7df93401fa7aee8755f40a7094dde866888927d5a55",
-    "data/manifest.json": "e24fc84538d2957c889762448300ab9f9ec1261cb11c64e8eca32008536bab6c",
-    "features/transforms.py": "222aca08c6f77157b84bf323b19fb9d3053ba1fee1b5f25da8beb2ef4e1560a8",
-    "models/base.py": "b11f0493c749c22cb118241f5fd15551ff1a2596322630fdffa4544a10a07291",
-    "models/baselines.py": "b85b8a10e44a2587e39e81eb73b2d80523c4408f2f6cb551da5a2bb4ddb76c75",
-    "kernels/projected.py": "b5b59747fb779aba26cab5983db9a3ed4edd5f8ec862ddfc9e492b83cf4a44f1",
-    "quantum/embed.py": "0bd625260d3c3aa7cc04094f63c72eb9e8d8af7d58c37799251dca4ace2855bd",
-    "quantum/feature_map.py": "cf02d83b96e2b1871af70f5ee0619747e347e531b73d307d4fe6d9ad98e9a53a",
-    "quantum/observables.py": "66f265444cda99f559977e328484e24856c31b78090b1c1e8f0f15b9019d83a7",
-    "store/io.py": "f5675f45911b44c005df0f8a4315b0af44231e03aaa687d2f153cdaf4dfe0d6b",
-    "experiments/run.py": "f96abe3be0f9810a1c867d8a3663276be98bf9964b0af9bc5419af84148dbb0e",
-    "experiments/e03_novelty.py": "08669226d48dd3ffe772b9203ca67f47ea06c643c5860ac74e5c8cf16cd50c23",
-    "experiments/e03_preprocessing.py": "24f96aea019bfb36f13b2463b1268f129d508f6576d0364cea039f218a08c1ed",
-    "experiments/e03_metrics.py": "e3e6fe5ab69b5498b2d30a066eb11f8d6a6612ca30e37901ea6606299f196d32",
-    "experiments/e03_parallel.py": "1e5c855d14f7c04df83c894ad930ced1bfabe88b0efb8e30014e74c09cef1dd7",
-    "experiments/e03_report.py": "558135f93e543808cec04f2353f7b8d2296728b49f002f581310237b9fe5c8fd",
-    "experiments/e03_integrity.py": "657afe0cdff8367333d69f13a24a2feab1cb5b39409177a6e2849d1d68ff9cc6",
-    "experiments/rq4/e03_gravityspy.yaml": "8bdf1acab97d947ead54d9ceb378d5d35444616131862b581a77819b4b9c4a87",
-    "configs/hardware_frozen.yaml": "92048ca1de2201e5e2c30307b3c8906b9422f5b5733c3075ef358af0a18c852b",
-    "docs/contracts.md": "58c1817c304a2cb8668dc644c4de1d1bd7d905ad98516515093b5b1bdb84bef5",
-    "requirements.txt": "d1c91bff8eaaa0a060984936cd211db6c5c611416491769f23c155ea28cfc448"
-  },
-  "historical_receipt_preserved": "results/e03/review_20261125/historical_validation_receipt.json",
-  "evidence_directory": "results/e03/review_20261125",
-  "limitations": [
-    "Integrity checks do not execute scientific models.",
-    "Frozen partition membership is not evidence of leakage-free fitted preprocessing.",
-    "No new real-data metric, confidence interval or physics outcome is claimed.",
-    "Independent verification of prior metrics is blocked by missing saved predictions and IDs."
-  ]
+  "formal_H3_acceptance": "not claimed; budget 9 rather than generic preregistered 60 is explicitly documented",
+  "current_report": "docs/E03_results_loco.md",
+  "review_response": "docs/E03_REVIEW_RESPONSE.md",
+  "prior_receipt": "results/e03/review_followup_20261125/prior_E03_validation.json",
+  "issue_operations": "An earlier issue #75 was created before the user requested no further issues; no subsequent issue operation was performed."
 }

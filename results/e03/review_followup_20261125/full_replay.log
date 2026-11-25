@@ -1,0 +1,99 @@
+E03 1/10: Blip, seed=0, train/val/test=2048/2048/8192
+E03 1/10: Koi_Fish, seed=0, train/val/test=2048/2048/8192
+E03 1/10: Extremely_Loud, seed=0, train/val/test=2048/2048/8192
+E03 1/10: Fast_Scattering, seed=0, train/val/test=2048/2048/8192
+E03 2/10: Blip, seed=1, train/val/test=2048/2048/8192
+E03 2/10: Koi_Fish, seed=1, train/val/test=2048/2048/8192
+E03 2/10: Extremely_Loud, seed=1, train/val/test=2048/2048/8192
+E03 2/10: Fast_Scattering, seed=1, train/val/test=2048/2048/8192
+E03 3/10: Blip, seed=2, train/val/test=2048/2048/8192
+E03 3/10: Koi_Fish, seed=2, train/val/test=2048/2048/8192
+E03 3/10: Extremely_Loud, seed=2, train/val/test=2048/2048/8192
+E03 3/10: Fast_Scattering, seed=2, train/val/test=2048/2048/8192
+E03 4/10: Blip, seed=3, train/val/test=2048/2048/8192
+E03 4/10: Koi_Fish, seed=3, train/val/test=2048/2048/8192
+E03 4/10: Extremely_Loud, seed=3, train/val/test=2048/2048/8192
+E03 4/10: Fast_Scattering, seed=3, train/val/test=2048/2048/8192
+E03 5/10: Blip, seed=4, train/val/test=2048/2048/8192
+E03 5/10: Koi_Fish, seed=4, train/val/test=2048/2048/8192
+E03 5/10: Extremely_Loud, seed=4, train/val/test=2048/2048/8192
+E03 5/10: Fast_Scattering, seed=4, train/val/test=2048/2048/8192
+E03 6/10: Blip, seed=5, train/val/test=2048/2048/8192
+E03 6/10: Extremely_Loud, seed=5, train/val/test=2048/2048/8192
+E03 6/10: Koi_Fish, seed=5, train/val/test=2048/2048/8192
+E03 7/10: Blip, seed=6, train/val/test=2048/2048/8192
+E03 7/10: Koi_Fish, seed=6, train/val/test=2048/2048/8192
+E03 7/10: Extremely_Loud, seed=6, train/val/test=2048/2048/8192
+E03 6/10: Fast_Scattering, seed=5, train/val/test=2048/2048/8192
+E03 8/10: Blip, seed=7, train/val/test=2048/2048/8192
+E03 8/10: Koi_Fish, seed=7, train/val/test=2048/2048/8192
+E03 8/10: Extremely_Loud, seed=7, train/val/test=2048/2048/8192
+E03 7/10: Fast_Scattering, seed=6, train/val/test=2048/2048/8192
+E03 9/10: Blip, seed=8, train/val/test=2048/2048/8192
+E03 9/10: Koi_Fish, seed=8, train/val/test=2048/2048/8192
+E03 9/10: Extremely_Loud, seed=8, train/val/test=2048/2048/8192
+E03 8/10: Fast_Scattering, seed=7, train/val/test=2048/2048/8192
+E03 10/10: Blip, seed=9, train/val/test=2048/2048/8192
+E03 10/10: Koi_Fish, seed=9, train/val/test=2048/2048/8192
+mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{ea98fa8e-1a1f-40ec-8504-77bd9799576a}\Temp\matplotlib-6s848e2x because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+E03 10/10: Extremely_Loud, seed=9, train/val/test=2048/2048/8192
+E03 completed rotation: Blip
+mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{ea98fa8e-1a1f-40ec-8504-77bd9799576a}\Temp\matplotlib-c38414a1 because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+E03 completed rotation: Koi_Fish
+mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{ea98fa8e-1a1f-40ec-8504-77bd9799576a}\Temp\matplotlib-t0eq_gob because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+E03 completed rotation: Extremely_Loud
+E03 9/10: Fast_Scattering, seed=8, train/val/test=2048/2048/8192
+E03 1/10: Low_Frequency_Burst, seed=0, train/val/test=2048/2048/8192
+E03 1/10: Low_Frequency_Lines, seed=0, train/val/test=2048/2048/8192
+E03 1/10: Scattered_Light, seed=0, train/val/test=2048/2048/8192
+E03 10/10: Fast_Scattering, seed=9, train/val/test=2048/2048/8192
+mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{ea98fa8e-1a1f-40ec-8504-77bd9799576a}\Temp\matplotlib-x6xz51kv because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+E03 completed rotation: Fast_Scattering
+E03 2/10: Low_Frequency_Burst, seed=1, train/val/test=2048/2048/8192
+E03 2/10: Scattered_Light, seed=1, train/val/test=2048/2048/8192
+E03 2/10: Low_Frequency_Lines, seed=1, train/val/test=2048/2048/8192
+E03 1/10: Tomte, seed=0, train/val/test=2048/2048/8192
+E03 3/10: Scattered_Light, seed=2, train/val/test=2048/2048/8192
+E03 3/10: Low_Frequency_Burst, seed=2, train/val/test=2048/2048/8192
+E03 3/10: Low_Frequency_Lines, seed=2, train/val/test=2048/2048/8192
+E03 2/10: Tomte, seed=1, train/val/test=2048/2048/8192
+E03 4/10: Scattered_Light, seed=3, train/val/test=2048/2048/8192
+E03 4/10: Low_Frequency_Burst, seed=3, train/val/test=2048/2048/8192
+E03 4/10: Low_Frequency_Lines, seed=3, train/val/test=2048/2048/8192
+E03 3/10: Tomte, seed=2, train/val/test=2048/2048/8192
+E03 5/10: Scattered_Light, seed=4, train/val/test=2048/2048/8192
+E03 5/10: Low_Frequency_Burst, seed=4, train/val/test=2048/2048/8192
+E03 5/10: Low_Frequency_Lines, seed=4, train/val/test=2048/2048/8192
+E03 4/10: Tomte, seed=3, train/val/test=2048/2048/8192
+E03 6/10: Scattered_Light, seed=5, train/val/test=2048/2048/8192
+E03 6/10: Low_Frequency_Burst, seed=5, train/val/test=2048/2048/8192
+E03 6/10: Low_Frequency_Lines, seed=5, train/val/test=2048/2048/8192
+E03 5/10: Tomte, seed=4, train/val/test=2048/2048/8192
+E03 7/10: Scattered_Light, seed=6, train/val/test=2048/2048/8192
+E03 7/10: Low_Frequency_Burst, seed=6, train/val/test=2048/2048/8192
+E03 7/10: Low_Frequency_Lines, seed=6, train/val/test=2048/2048/8192
+E03 6/10: Tomte, seed=5, train/val/test=2048/2048/8192
+E03 8/10: Scattered_Light, seed=7, train/val/test=2048/2048/8192
+E03 8/10: Low_Frequency_Burst, seed=7, train/val/test=2048/2048/8192
+E03 8/10: Low_Frequency_Lines, seed=7, train/val/test=2048/2048/8192
+E03 7/10: Tomte, seed=6, train/val/test=2048/2048/8192
+E03 9/10: Scattered_Light, seed=8, train/val/test=2048/2048/8192
+E03 9/10: Low_Frequency_Burst, seed=8, train/val/test=2048/2048/8192
+E03 9/10: Low_Frequency_Lines, seed=8, train/val/test=2048/2048/8192
+E03 8/10: Tomte, seed=7, train/val/test=2048/2048/8192
+E03 10/10: Scattered_Light, seed=9, train/val/test=2048/2048/8192
+E03 completed rotation: Scattered_Light
+E03 10/10: Low_Frequency_Burst, seed=9, train/val/test=2048/2048/8192
+E03 completed rotation: Low_Frequency_Burst
+E03 10/10: Low_Frequency_Lines, seed=9, train/val/test=2048/2048/8192
+E03 completed rotation: Low_Frequency_Lines
+E03 9/10: Tomte, seed=8, train/val/test=2048/2048/8192
+E03 10/10: Tomte, seed=9, train/val/test=2048/2048/8192
+E03 completed rotation: Tomte
+mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{ea98fa8e-1a1f-40ec-8504-77bd9799576a}\Temp\matplotlib-x47t2qg7 because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+FULL_REPLAY_ROWS 3200

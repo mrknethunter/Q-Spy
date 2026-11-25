@@ -12,11 +12,12 @@ from typing import Iterable
 
 
 SOURCE_FILES = (
-    "data/curate.py", "data/splits.py", "data/manifest.json", "features/transforms.py",
+    "data/curate.py", "data/splits.py", "data/manifest.json", "data/download.py", "data/profile.py", "features/transforms.py",
     "models/base.py", "models/baselines.py", "kernels/projected.py", "quantum/embed.py",
     "quantum/feature_map.py", "quantum/observables.py", "store/io.py", "experiments/run.py",
     "experiments/e03_novelty.py", "experiments/e03_preprocessing.py", "experiments/e03_metrics.py",
     "experiments/e03_parallel.py", "experiments/e03_report.py", "experiments/e03_integrity.py",
+    "experiments/e03_tuning.py",
     "experiments/rq4/e03_gravityspy.yaml", "configs/hardware_frozen.yaml",
     "docs/contracts.md", "requirements.txt",
 )

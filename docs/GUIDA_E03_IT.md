@@ -1,3 +1,5 @@
+> **Aggiornamento dopo review:** la consegna corrente è la PR #74 su `E-03-task-review`. Metodo: E03.md; risultati corretti e verificati: E03_results_loco.md; ricevuta: E03_validation.json. Gli archivi lossless sono in `results/e03/loco_1125_archives/`; estrarre tutti i nove ZIP nella stessa directory nuova. Le istruzioni di caricamento sotto conservano il contesto della prima consegna e non richiedono altre PR o issue.
+
 # E-03 — Consegna su GitHub e riproduzione
 
 ## Caricamento dal sito

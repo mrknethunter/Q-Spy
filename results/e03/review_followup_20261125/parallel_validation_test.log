@@ -1,0 +1,89 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_verified_worker_snapshots_survive_cleanup_and_detect_aggregate_tampering _
+
+tmp_path = WindowsPath('C:/Users/Andrea/Documents/Qiskit/Q_SPY/Q-Spy/results/e03/.tests_worker_validation/test_verified_worker_snapshots0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000172540704A0>
+
+    def test_verified_worker_snapshots_survive_cleanup_and_detect_aggregate_tampering(tmp_path, monkeypatch):
+        frame = synthetic_curated(n_per_class=120, seed=4)
+        splits = tmp_path / "splits"
+        generate_splits(frame, output_dir=splits,
+                        config=SplitConfig(seeds=(0,), test_per_class=2, val_per_class=2))
+        curated = tmp_path / "curated.csv"
+        frame.to_csv(curated, index=False, float_format="%.17g")
+        snapshots, out = tmp_path / "snapshots", tmp_path / "out"
+        real_run = parallel._run_fold
+    
+        def observed(data, family, params):
+            result = real_run(data, family, params)
+            assert snapshot_worker(parallel.Path(params["artifact_dir"]), snapshots / family)
+            return result
+    
+        monkeypatch.setattr(parallel, "ProcessPoolExecutor", InlinePool)
+        monkeypatch.setattr(parallel, "_run_fold", observed)
+>       metrics = parallel.run_parallel(frame, workers=1, seeds=[0],
+            held_outs=["Fast_Scattering", "Blip"], budget=1, cv_folds=2,
+            n_qubits=7, layers=1, s=.3, max_train=32, max_val=32, max_test=64,
+            bootstrap=10, event_bootstrap=10, split_dir=splits, artifact_dir=out, store_bloch=True)
+
+tests\test_e03_parallel_validation.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+experiments\e03_parallel.py:120: in run_parallel
+    future.result()
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+tests\test_e03_review.py:36: in submit
+    future.set_result(function(*args))
+                      ^^^^^^^^^^^^^^^
+tests\test_e03_parallel_validation.py:24: in observed
+    assert snapshot_worker(parallel.Path(params["artifact_dir"]), snapshots / family)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+source = WindowsPath('C:/Users/Andrea/Documents/Qiskit/Q_SPY/Q-Spy/results/e03/.tests_worker_validation/test_verified_worker_snapshots0/out/partial_rotations/Blip')
+destination = WindowsPath('C:/Users/Andrea/Documents/Qiskit/Q_SPY/Q-Spy/results/e03/.tests_worker_validation/test_verified_worker_snapshots0/snapshots/Blip')
+
+    def snapshot_worker(source: Path, destination: Path) -> bool:
+        """Link immutable outputs as they appear; copy the real manifest at completion."""
+        if not source.is_dir():
+            return False
+        destination.mkdir(parents=True, exist_ok=True)
+        for path in source.rglob("*"):
+            if not path.is_file() or path.name == "manifest.json" or path.name.startswith(".e03-"):
+                continue
+            target = destination / path.relative_to(source)
+            if not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    os.link(path, target)
+                except (FileNotFoundError, PermissionError):
+                    continue  # the writer has not closed this output yet; retry
+        manifest_path = source / "manifest.json"
+        if not manifest_path.is_file():
+            return False
+        payload = manifest_path.read_bytes()
+        manifest = json.loads(payload)
+        if manifest.get("status") != "complete":
+            return False
+        # Completion makes all named files immutable; link any final files now.
+        for relative in manifest["files"]:
+            target = destination / relative
+            if not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+>               os.link(source / relative, target)
+E               PermissionError: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\Documents\\Qiskit\\Q_SPY\\Q-Spy\\results\\e03\\.tests_worker_validation\\test_verified_worker_snapshots0\\out\\partial_rotations\\Blip\\audit.json' -> 'C:\\Users\\Andrea\\Documents\\Qiskit\\Q_SPY\\Q-Spy\\results\\e03\\.tests_worker_validation\\test_verified_worker_snapshots0\\snapshots\\Blip\\audit.json'
+
+experiments\e03_validation_parallel.py:54: PermissionError
+---------------------------- Captured stdout call -----------------------------
+E03 1/1: Fast_Scattering, seed=0, train/val/test=32/32/64
+E03 1/1: Blip, seed=0, train/val/test=32/32/64
+------------------------------ Captured log call ------------------------------
+WARNING  matplotlib:__init__.py:537 mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+WARNING  matplotlib:__init__.py:554 Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{4b498453-10db-40f5-bff6-e83a330ff65d}\Temp\matplotlib-xbx88avk because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+=========================== short test summary info ===========================
+FAILED tests/test_e03_parallel_validation.py::test_verified_worker_snapshots_survive_cleanup_and_detect_aggregate_tampering
+1 failed in 22.66s

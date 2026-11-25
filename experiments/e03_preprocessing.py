@@ -62,7 +62,7 @@ class FoldRepresentationCache:
         id_list = list(map(str, ids))
         if len(id_list) != len(matrix) or len(set(id_list)) != len(id_list):
             raise ValueError("registered IDs must be unique and aligned with raw rows")
-        if role not in {"inner_cv_training", "outer_training"}:
+        if role not in {"inner_cv_training", "nu_calibration_training", "outer_training"}:
             raise ValueError("only training IDs may be registered for scaler fitting")
         key = _matrix_hash(matrix)
         record = {"role": role, "n_rows": len(matrix), "ids_sha256": _id_hash(id_list)}

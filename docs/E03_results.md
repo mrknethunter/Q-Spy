@@ -1,3 +1,5 @@
+> **Risultati correnti corretti:** [E03_results_loco.md](E03_results_loco.md). Le tabelle seguenti sono lo storico precedente, conservato e non rivalidato.
+
 # E-03 — Prior reported L0 results (not revalidated after audit)
 
 > **Current status:** These figures are preserved from a prior run. The audit

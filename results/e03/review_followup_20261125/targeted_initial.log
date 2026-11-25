@@ -1,0 +1,22 @@
+.F........................................  [100%]
+================================== FAILURES ===================================
+_____ test_surrogate_folds_exclude_the_family_from_fit_and_nu_calibration _____
+
+    def test_surrogate_folds_exclude_the_family_from_fit_and_nu_calibration():
+        X, labels = known_training()
+        for fold in novelty_selection_splits(labels, seed=3, cv_folds=3):
+            assert not set(fold["train"]) & set(fold["calibration"])
+            assert not set(fold["train"]) & set(fold["surrogate"])
+            assert not set(fold["calibration"]) & set(fold["surrogate"])
+            assert set(labels[fold["surrogate"]]) == {fold["family"]}
+            assert fold["family"] not in labels[fold["train"]]
+            assert fold["family"] not in labels[fold["calibration"]]
+        labels[0] = "Fast_Scattering"
+>       with pytest.raises(ValueError, match="Fast_Scattering"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests\test_e03_loco.py:46: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_e03_loco.py::test_surrogate_folds_exclude_the_family_from_fit_and_nu_calibration
+1 failed, 41 passed, 29 subtests passed in 7.49s

@@ -26,6 +26,15 @@ def _run_fold(frame, family, arguments):
         return run_experiment(frame, held_outs=[family], **arguments)
 
 
+def _concat_nonempty(frames):
+    """Preserve empty diagnostic schemas without pandas dtype-inference warnings."""
+    frames = list(frames)
+    if not frames:
+        raise ValueError("cannot aggregate an empty worker list")
+    populated = [frame for frame in frames if not frame.empty]
+    return pd.concat(populated, ignore_index=True) if populated else frames[0].iloc[:0].copy()
+
+
 def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03", resume=False, **parameters):
     """Run independent rotations; resume only byte-verified matching completed workers.
 
@@ -54,7 +63,7 @@ def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03"
                     source_sha256={path: _hash(ROOT / path) for path in SOURCE_FILES},
                     python=platform.python_version(),
                     versions={name: importlib.metadata.version(name) for name in
-                              ("numpy", "pandas", "scikit-learn", "matplotlib", "qiskit", "qiskit-aer")})
+                              ("numpy", "pandas", "scikit-learn", "scipy", "threadpoolctl", "matplotlib", "qiskit", "qiskit-aer")})
     out = Path(artifact_dir)
     populated = out.exists() and any(out.iterdir())
     if populated and not resume:
@@ -144,23 +153,23 @@ def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03"
                 if key != "held_outs" and child["settings"][key] != value:
                     raise ValueError(f"rotation settings differ: {key}")
         metric_frames = [pd.read_csv(child / "e03_metrics.csv", float_precision="round_trip") for child in children]
-        metrics = pd.concat(metric_frames, ignore_index=True)
+        metrics = _concat_nonempty(metric_frames)
         summary, paired = summarize(metrics, bootstrap=reference["settings"]["bootstrap"])
         metrics.to_csv(out / "e03_metrics.csv", index=False)
         summary.to_csv(out / "e03_summary.csv", index=False)
         paired.to_csv(out / "e03_paired_differences.csv", index=False)
-        pd.concat([pd.read_csv(child / "e03_event_bootstrap.csv", float_precision="round_trip")
-                   for child in children], ignore_index=True).to_csv(
+        _concat_nonempty([pd.read_csv(child / "e03_event_bootstrap.csv", float_precision="round_trip")
+                   for child in children]).to_csv(
                        out / "e03_event_bootstrap.csv", index=False)
-        pd.concat([pd.read_csv(child / "e03_event_paired_differences.csv", float_precision="round_trip")
-                   for child in children], ignore_index=True).to_csv(
+        _concat_nonempty([pd.read_csv(child / "e03_event_paired_differences.csv", float_precision="round_trip")
+                   for child in children]).to_csv(
                        out / "e03_event_paired_differences.csv", index=False)
-        curves = pd.concat([pd.read_csv(child / "roc_curves.csv.gz", float_precision="round_trip")
-                            for child in children], ignore_index=True)
+        curves = _concat_nonempty([pd.read_csv(child / "roc_curves.csv.gz", float_precision="round_trip")
+                            for child in children])
         _write_gzip(out / "roc_curves.csv.gz", curves)
         for name in ("family_errors.csv", "neighbors_fast_misses.csv", "missed_fast_events.csv"):
-            pd.concat([pd.read_csv(child / name, float_precision="round_trip") for child in children],
-                      ignore_index=True).to_csv(out / name, index=False)
+            _concat_nonempty([pd.read_csv(child / name, float_precision="round_trip") for child in children]).to_csv(
+                out / name, index=False)
         audit, selections = [], []
         (out / "predictions").mkdir(exist_ok=resume)
         (out / "validation_scores").mkdir(exist_ok=resume)

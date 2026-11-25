@@ -1,0 +1,37 @@
+Independent verification started: Blip
+Independent verification started: Koi_Fish
+Independent verification started: Extremely_Loud
+Independent verification started: Fast_Scattering
+Independent verification passed: Blip
+Independent verification passed: Koi_Fish
+Independent verification passed: Extremely_Loud
+Independent verification passed: Fast_Scattering
+Independent verification started: Scattered_Light
+Independent verification started: Low_Frequency_Burst
+Independent verification started: Low_Frequency_Lines
+Independent verification started: Tomte
+Independent verification passed: Low_Frequency_Burst
+Independent verification passed: Scattered_Light
+Independent verification passed: Low_Frequency_Lines
+Independent verification passed: Tomte
+{
+  "status": "pass",
+  "full_frozen_cases_checked": 80,
+  "metric_values_recalculated": 3200,
+  "models_per_case": 4,
+  "all_result_hashes_checked": true,
+  "source_hashes_checked": true,
+  "full_partition_class_exclusion_checked": true,
+  "selected_ids_and_labels_checked": true,
+  "fixed_test_across_seeds_checked": true,
+  "equal_budgets_checked": true,
+  "validation_thresholds_recalculated": true,
+  "paired_bootstrap_recalculated": true,
+  "event_bootstrap_recalculated": true,
+  "hyperparameter_candidates_folds_calibration_and_winner_checked": true,
+  "scalers_refitted_from_selected_training": true,
+  "manifest_sha256": "50c61dc75a44ad5846d41dd2a24903d2d77e5cf75dcd6a148994133fe4caedcc",
+  "verifier_sha256": "10625b31053263f9adc0fe414ada984a8c10d744c5f02347c0b6516319b3b116",
+  "orchestration_sha256": "0c799ce00945ec811cf110f05602bb8181e0df228160ce591b78f16a2c1b6217",
+  "verification": "canonical_worker_recalculation_and_exact_aggregate_equality"
+}

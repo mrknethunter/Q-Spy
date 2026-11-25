@@ -139,8 +139,8 @@ def test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle(tmp_path, mo
     audit = json.loads((out / "audit.json").read_text())
     assert all(case["full_partition_leakage_checked"] for case in audit)
     assert all(model["validation_fpr"] <= .01 for case in audit for model in case["models"].values())
-    assert all(len(model["inner_preprocessing_folds"]) == 2 for case in audit
-               for model in case["models"].values())
+    assert all(len(model["inner_preprocessing_folds"]) == len({part["train_ids_sha256"] for part in case["selection_folds"]})
+               for case in audit for model in case["models"].values())
     assert (out / "e03_event_bootstrap.csv").is_file()
     assert (out / "e03_event_paired_differences.csv").is_file()
     with gzip.open(out / "selected_ids.json.gz", "rt") as file:

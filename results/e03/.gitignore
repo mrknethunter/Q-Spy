@@ -1,0 +1,7 @@
+# E-03 local runtime and verified input cache; never publish third-party/raw data.
+.venv-review/
+.uv-cache-review/
+.inputs-review/
+.tests*/
+# Published lossless ZIPs preserve these outputs without Git newline conversion.
+loco_1125/

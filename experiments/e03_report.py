@@ -8,7 +8,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold
+from models.baselines import (build_baseline, novelty_selection_splits,
+                             novelty_final_calibration_split, novelty_candidate_configurations)
 
 from data.splits import DEFAULT_SPLIT_DIR, load_split, verify_dataset
 from features.transforms import make_features
@@ -16,6 +17,7 @@ from experiments.e03_novelty import HELD_OUT, MODELS, _hash, _id_hash, _json, an
 from experiments.e03_metrics import event_bootstrap_seed, paired_event_bootstrap
 from experiments.e03_integrity import case_index, verify_complete_artifacts
 from experiments.e03_novelty import calibration_threshold
+from experiments.e03_tuning import validate_hyperparameters
 
 
 def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
@@ -83,21 +85,42 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
                     raise ValueError("held-out label in a FULL train/validation partition")
             if set(case["train"]) & set(case["val"]) or set(case["train"]) & set(case["test"]) or set(case["val"]) & set(case["test"]):
                 raise ValueError("selected ID leakage")
-            fold_count = min(settings["cv_folds"], len(case["train"]))
+            training_labels = np.asarray([labels[id_] for id_ in case["train"]])
+            selection_splits = novelty_selection_splits(training_labels, seed=seed,
+                                                         cv_folds=settings["cv_folds"])
+            fold_count = len(selection_splits)
             expected_inner_hashes = {
-                _id_hash([case["train"][index] for index in train_indices])
-                for train_indices, _ in KFold(n_splits=fold_count, shuffle=True,
-                                              random_state=seed).split(np.zeros(len(case["train"])))
+                _id_hash([case["train"][index] for index in part["train"]])
+                for part in selection_splits
             }
+            nu_fit, _ = novelty_final_calibration_split(len(case["train"]), seed=seed,
+                                                       cv_folds=settings["cv_folds"])
+            expected_folds = [dict(surrogate_family=part["family"], fold=part["fold"],
+                n_train=len(part["train"]), n_known=len(part["calibration"]),
+                n_surrogate=len(part["surrogate"])) for part in selection_splits]
+            expected_membership = [dict(surrogate_family=part["family"], fold=part["fold"],
+                train_ids_sha256=_id_hash([case["train"][index] for index in part["train"]]),
+                known_ids_sha256=_id_hash([case["train"][index] for index in part["calibration"]]),
+                surrogate_ids_sha256=_id_hash([case["train"][index] for index in part["surrogate"]]))
+                for part in selection_splits]
+            if info["selection_folds"] != expected_membership:
+                raise ValueError("surrogate selection IDs differ from known-training fold membership")
             for model_name in MODELS:
                 model_audit = info["models"][model_name]
+                selector = build_baseline("rbf_ocsvm" if model_name == "projected_ocsvm" else model_name,
+                                          budget=settings["budget"], seed=seed, cv_folds=settings["cv_folds"])
+                candidates, grid = novelty_candidate_configurations(selector)
+                validate_hyperparameters(model_audit, candidates, grid, expected_folds)
                 inner_records = model_audit["inner_preprocessing_folds"]
-                if (len(inner_records) != fold_count
+                if (len(inner_records) != len(expected_inner_hashes)
                         or {record["ids_sha256"] for record in inner_records} != expected_inner_hashes
                         or any(record["role"] != "inner_cv_training" for record in inner_records)):
                     raise ValueError("fold scaler membership differs from M-04 inner training IDs")
                 if model_audit["outer_preprocessing"]["ids_sha256"] != _id_hash(case["train"]):
                     raise ValueError("final scaler was not fitted on the selected outer training IDs")
+                if model_audit["nu_calibration_preprocessing"]["ids_sha256"] != _id_hash(
+                        [case["train"][index] for index in nu_fit]):
+                    raise ValueError("nu calibration scaler used incompatible training IDs")
                 for field, outer_field in (("scaler_center", "scaler_center"), ("scaler_scale", "scaler_scale")):
                     if model_audit["outer_preprocessing"][field] != info[outer_field]:
                         raise ValueError("a model's final scaler differs from the common outer scaler")
@@ -106,16 +129,17 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
                 if not np.array_equal(scaler.center_, np.array(info["scaler_center"])) or not np.array_equal(scaler.scale_, np.array(info["scaler_scale"])):
                     raise ValueError("scaler does not reproduce from selected training rows")
                 for model_name in MODELS:
-                    for record in info["models"][model_name]["inner_preprocessing_folds"]:
-                        matched = [
-                            [case["train"][index] for index in train_indices]
-                            for train_indices, _ in KFold(n_splits=fold_count, shuffle=True,
-                                                          random_state=seed).split(np.zeros(len(case["train"])))
-                            if _id_hash([case["train"][index] for index in train_indices]) == record["ids_sha256"]
-                        ]
+                    records = [*info["models"][model_name]["inner_preprocessing_folds"],
+                               info["models"][model_name]["nu_calibration_preprocessing"]]
+                    for record in records:
+                        matched = {
+                            tuple(case["train"][index] for index in indices)
+                            for indices in [*(part["train"] for part in selection_splits), nu_fit]
+                            if _id_hash([case["train"][index] for index in indices]) == record["ids_sha256"]
+                        }
                         if len(matched) != 1:
                             raise ValueError("inner scaler audit does not map to one fold")
-                        _, fold_scaler = make_features(curated.loc[matched[0]])
+                        _, fold_scaler = make_features(curated.loc[list(next(iter(matched)))])
                         if (not np.array_equal(fold_scaler.center_, np.array(record["scaler_center"]))
                                 or not np.array_equal(fold_scaler.scale_, np.array(record["scaler_scale"]))):
                             raise ValueError("an inner scaler does not reproduce from its training IDs")
@@ -210,6 +234,7 @@ def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
                 full_partition_class_exclusion_checked=True, selected_ids_and_labels_checked=True,
                 fixed_test_across_seeds_checked=True, equal_budgets_checked=True,
                 validation_thresholds_recalculated=True,
+                hyperparameter_candidates_folds_calibration_and_winner_checked=True,
                 scalers_refitted_from_selected_training=curated is not None,
                 source_hashes_checked=True, event_bootstrap_recalculated=True,
                 curated_csv_sha256=_hash(curated_csv) if curated_csv is not None else None,
@@ -245,7 +270,7 @@ def render_report(directory, verification):
              f"Embedding esatto L0: {settings['embed_config']['n_qubits']} qubit, "
              f"{settings['embed_config']['layers']} layer, s={settings['embed_config']['s']}, CZ attivi. "
              f"Budget uguale: {settings['budget']} configurazioni per modello, "
-             f"{settings['cv_folds']} fold interni. Training, tuning e scaling escludono le famiglie sconosciute; "
+             f"{settings['cv_folds']} fold interni per famiglia surrogata. Training, tuning e scaling escludono le famiglie sconosciute; "
              "la soglia operativa usa soltanto validation di classi note. Nessuna esecuzione hardware.", "",
              f"Durata registrata: {manifest['runtime_seconds']/60:.2f} minuti. Versioni: " +
              ", ".join(f"{key} {value}" for key, value in manifest['versions'].items()) + ".", "",
@@ -397,6 +422,23 @@ def render_report(directory, verification):
             count = int(group.get(family, 0))
             rate = f"{count/denominator:.4f}" if denominator else "non definita: nessun mancato"
             lines.append(f"| {model} | {family} | {count} / {denominator} | {rate} |")
+    lines += ["", "## Iperparametri selezionati: replay principale", "",
+              "Gamma è scelta dall'AUROC LOCO di classi note usate come anomalie surrogate. "
+              "Nu usa separatamente un target del 5% sui soli noti interni. La soglia "
+              "operativa all'1% resta calibrata sulla validation esterna indipendente. "
+              "La griglia discreta di nu e la risoluzione campionaria non garantiscono "
+              "un FPR interno esattamente pari al 5%; riportiamo quello misurato.", "",
+              "| Seed | Modello | c | nu | Gamma finale | AUROC surrogate CV | FPR calibrazione interna |",
+              "| --- | --- | --- | --- | --- | --- | --- |"]
+    for case in json.loads((directory / "audit.json").read_text()):
+        if case["held_out"] != HELD_OUT:
+            continue
+        for model, record in case["models"].items():
+            params = record["best_params"]
+            lines.append(f"| {case['seed']} | {model} | {params.get('gamma_factor', '—')} | "
+                f"{params.get('nu', '—')} | {record.get('effective_gamma', '—')} | "
+                f"{record['best_cv_score']:.4f} | "
+                f"{record['selection_audit']['final_nu_calibration']['observed_fpr']:.4f} |")
     if len(primary):
         performance = primary[primary["metric"] == "auroc"].set_index("model")["mean"]
         interpretation = ("\n## Lettura del confronto\n\nIn questa configurazione il miglior AUROC medio è di **" +

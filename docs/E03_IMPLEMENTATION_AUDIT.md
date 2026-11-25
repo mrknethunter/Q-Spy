@@ -1,3 +1,7 @@
+> **Esito successivo della review:** 80/80 casi completati e verificati, 3.200 metriche ricalcolate. La validazione tecnica corrente è descritta in [E03_results_loco.md](E03_results_loco.md) e `E03_validation.json`; l’accettazione formale H3 resta distinta per il budget dichiarato di nove configurazioni.
+
+> **Revisione successiva autorizzata:** la review fornita dall’utente richiede la correzione condivisa del tuning. L’ambiente pinned è ora disponibile e i test scientifici sono stati eseguiti. Questo rapporto conserva la fase precedente; lo stato aggiornato è in [E03_REVIEW_RESPONSE.md](E03_REVIEW_RESPONSE.md) e `E03_validation.json`.
+
 # E-03 current checkout audit — 2026-11-25 (Windows review)
 
 This section supersedes historical environment/Git-state claims below. The

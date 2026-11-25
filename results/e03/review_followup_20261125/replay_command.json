@@ -1,0 +1,15 @@
+{
+  "command": [
+    "results/e03/.venv-review/Scripts/python.exe",
+    "-B",
+    "-u",
+    "-c",
+    "import yaml; from experiments.e03_novelty import load_data; from experiments.e03_parallel import run_parallel; from pathlib import Path; cfg=yaml.safe_load(Path('experiments/rq4/e03_gravityspy.yaml').read_text()); params=cfg['params']; params['artifact_dir']='results/e03/loco_1125'; frame=load_data(curated_csv='results/e03/.inputs-review/curated.csv')[0]; result=run_parallel(frame,**params); print('FULL_REPLAY_ROWS',len(result),flush=True)"
+  ],
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "started_at_utc": "2026-11-25T12:39:40Z"
+}

@@ -178,6 +178,13 @@ class BaseNoveltyModel(BaseBudgetedModel, ABC):
 
     task = "novelty"
 
+    def get_budget_report(self) -> dict[str, Any]:
+        report = super().get_budget_report()
+        report["tuning_strategy"] = getattr(self, "tuning_strategy_", "not_fitted")
+        if hasattr(self, "selection_audit_"):
+            report["selection_audit"] = self.selection_audit_
+        return report
+
     def _resolve_novelty_n_splits(self, n_samples: int) -> int:
         if n_samples < 2:
             raise ValueError(f"Need at least 2 samples for inner CV, got {n_samples}.")
@@ -203,6 +210,14 @@ class BaseNoveltyModel(BaseBudgetedModel, ABC):
         return float(1.0 - abs(val_fpr - target_fpr) - excess_fpr_penalty)
 
     def fit(self, X: np.ndarray, y: np.ndarray | None = None) -> BaseNoveltyModel:
+        if y is not None:
+            # One shared selector for all labelled novelty families. Import here
+            # avoids a module-import cycle with the baseline estimator classes.
+            from models.baselines import fit_surrogate_loco
+            return fit_surrogate_loco(self, X, y)
+        # Preserve the documented unlabelled API, but never present this legacy
+        # calibration-only mode as validation of primary hypothesis H3.
+        self.tuning_strategy_ = "unlabelled_calibration_only_not_H3"
         X_arr = np.asarray(X, dtype=np.float64)
         configs = self._sample_configurations()
         n_splits = self._resolve_novelty_n_splits(len(X_arr))

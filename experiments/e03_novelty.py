@@ -15,12 +15,11 @@ import time
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
-from sklearn.model_selection import KFold
 
 from data.curate import HELD_OUT, KNOWN_CLASSES, load_curated
 from data.splits import DEFAULT_SPLIT_DIR, load_split, verify_dataset
 from features.transforms import FEATURE_COLUMNS, make_features
-from models.baselines import build_baseline
+from models.baselines import build_baseline, novelty_selection_splits, novelty_final_calibration_split
 from quantum.embed import EmbedConfig, embed
 from store.io import write_bloch
 from experiments.e03_metrics import anomaly_metrics, event_bootstrap_seed, paired_event_bootstrap
@@ -160,13 +159,13 @@ def summarize(metrics, bootstrap=5000, seed=29):
         for model in MODELS:
             values = table[model].to_numpy()
             samples = values[draws].mean(axis=1)
-            lower, upper = np.quantile(samples, [.025, .975]) if len(table) > 1 else (None, None)
+            lower, upper = np.quantile(samples, [.025, .975]) if len(table) > 1 else (np.nan, np.nan)
             summaries.append(dict(zip(("held_out", "scope", "metric"), key)) |
                              dict(model=model, mean=float(values.mean()), ci_low=lower, ci_high=upper,
                                   n_seeds=len(table), ci_method="paired_seed_bootstrap_conditional_test"))
         for baseline in MODELS[1:]:
             delta = (table[MODELS[0]] - table[baseline]).to_numpy()
-            lower, upper = np.quantile(delta[draws].mean(axis=1), [.025, .975]) if len(table) > 1 else (None, None)
+            lower, upper = np.quantile(delta[draws].mean(axis=1), [.025, .975]) if len(table) > 1 else (np.nan, np.nan)
             differences.append(dict(zip(("held_out", "scope", "metric"), key)) |
                                dict(comparison=f"{MODELS[0]} minus {baseline}", mean=float(delta.mean()),
                                     ci_low=lower, ci_high=upper, n_seeds=len(table)))
@@ -220,7 +219,7 @@ def _plot_rocs(curves, out):
         plt.close(fig)
 
 
-def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
+def run_experiment(frame, *, seeds=None, held_outs=None, budget=9, cv_folds=3,
                    n_qubits=8, layers=2, s=.1778, max_train=2048, max_val=2048,
                    max_test=8192, bootstrap=5000, event_bootstrap=1000, split_dir=None,
                    artifact_dir="results/e03", store_bloch=True, embed_batch_size=512):
@@ -237,8 +236,8 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                                   ("embed_batch_size", embed_batch_size, 1)):
         if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
             raise ValueError(f"{name} must be an integer >= {minimum}")
-    if budget > 30:
-        raise ValueError("budget <= 30 ensures the same number of candidates for every model")
+    if budget > 9:
+        raise ValueError("budget <= 9 ensures unique median-gamma candidates and equal budgets")
     if not seeds or len(set(seeds)) != len(seeds) or any(type(seed) is not int or seed < 0 for seed in seeds):
         raise ValueError("seeds must be distinct nonnegative integers from the split bundle")
     if not held_outs or len(set(held_outs)) != len(held_outs) or not set(held_outs) <= {HELD_OUT, *KNOWN_CLASSES}:
@@ -278,7 +277,7 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                     dataset_sha256=split_manifest["dataset_sha256"], split_manifest_sha256=_hash(directory / "manifest.json"),
                     source_sha256={file: _hash(ROOT / file) for file in source_files},
                     python=platform.python_version(), versions={name: importlib.metadata.version(name) for name in
-                    ("numpy", "pandas", "scikit-learn", "matplotlib", "qiskit", "qiskit-aer")},
+                    ("numpy", "pandas", "scikit-learn", "scipy", "threadpoolctl", "matplotlib", "qiskit", "qiskit-aer")},
                     started_at=datetime.now(timezone.utc).isoformat(), completed_cases=0)
     atomic_json(out / "manifest.json", manifest)
     rows, rocs, audit, selections, family_counts, neighbors = [], [], [], [], [], []
@@ -357,8 +356,14 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                 raw_train = train.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64)
                 raw_val = val.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64)
                 raw_test = test.loc[:, FEATURE_COLUMNS].to_numpy(dtype=np.float64)
-                inner_splits = list(KFold(n_splits=min(cv_folds, len(train)), shuffle=True,
-                                          random_state=seed).split(raw_train))
+                family_labels = train["label"].to_numpy()
+                loco_splits = novelty_selection_splits(family_labels, seed=seed, cv_folds=cv_folds)
+                inner_splits = [(part["train"], part["calibration"]) for part in loco_splits]
+                nu_fit, nu_val = novelty_final_calibration_split(len(train), seed=seed, cv_folds=cv_folds)
+                case_audit["selection_folds"] = [dict(surrogate_family=part["family"], fold=part["fold"],
+                    train_ids_sha256=_id_hash(train.iloc[part["train"]]["id"]),
+                    known_ids_sha256=_id_hash(train.iloc[part["calibration"]]["id"]),
+                    surrogate_ids_sha256=_id_hash(train.iloc[part["surrogate"]]["id"])) for part in loco_splits]
                 for model_name in MODELS:
                     model = build_baseline("rbf_ocsvm" if model_name == "projected_ocsvm" else model_name,
                                            budget=budget, seed=seed, cv_folds=cv_folds)
@@ -376,9 +381,11 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                             role="inner_cv_training",
                         )
                     cache.register_training_ids(raw_train, train["id"], role="outer_training")
+                    cache.register_training_ids(raw_train[nu_fit], train.iloc[nu_fit]["id"],
+                                                role="nu_calibration_training")
                     attach_fold_preprocessing(model, cache)
                     fit_started = time.monotonic()
-                    model.fit(raw_train)
+                    model.fit(raw_train, family_labels)
                     validation_scores = model.score_samples(raw_val)
                     scores = model.score_samples(raw_test)
                     threshold = calibration_threshold(validation_scores)
@@ -395,7 +402,12 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                                            if record["role"] == "inner_cv_training"]
                     outer_preprocessing = [record for record in cache.fit_audit
                                            if record["role"] == "outer_training"]
-                    if len(inner_preprocessing) != len(inner_splits) or len(outer_preprocessing) != 1:
+                    nu_preprocessing = [record for record in cache.fit_audit
+                                        if record["role"] == "nu_calibration_training"]
+                    expected_inner_ids = {_id_hash(train.iloc[indices]["id"]) for indices, _ in inner_splits}
+                    if ({record["ids_sha256"] for record in inner_preprocessing} != expected_inner_ids
+                            or len(outer_preprocessing) != 1
+                            or len(nu_preprocessing) != 1):
                         raise ValueError("fold-local scaler fit membership was not completely audited")
                     if any(record["role"] == "unregistered" for record in cache.fit_audit):
                         raise ValueError("preprocessing was fitted on unregistered/non-training rows")
@@ -405,6 +417,7 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                         fit_and_score_seconds=time.monotonic() - fit_started,
                         effective_gamma=getattr(model.best_estimator_, "_gamma", None),
                         inner_cv=model.cv_results_,
+                        nu_calibration_preprocessing=nu_preprocessing[0],
                         inner_preprocessing_folds=inner_preprocessing,
                         outer_preprocessing=outer_preprocessing[0])
                     prediction[model_name + "_score"] = scores
@@ -419,7 +432,7 @@ def run_experiment(frame, *, seeds=None, held_outs=None, budget=8, cv_folds=3,
                         values["fpr_validation_threshold"] = float(predicted[mask][y == 0].mean())
                         common = dict(experiment="E-03", protocol="P2", seed=seed, k=None, held_out=family,
                                       scope=scope, representation=REPRESENTATIONS[model_name], model=model_name,
-                                      tuning="known_only_inner_cv", embed_run_id=embed_run_id if model_name == "projected_ocsvm" else None,
+                                      tuning="nested_surrogate_loco_auroc", embed_run_id=embed_run_id if model_name == "projected_ocsvm" else None,
                                       budget=budget, n_configs_evaluated=report["n_configs_evaluated"],
                                       best_params=json.dumps(report["best_params"], sort_keys=True),
                                       n_train=len(train), n_val=len(val), n_test=int(mask.sum()),

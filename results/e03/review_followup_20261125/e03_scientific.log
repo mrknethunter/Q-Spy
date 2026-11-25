@@ -1,0 +1,400 @@
+............FF..........................................FF...                                                       [100%]
+================================== FAILURES ===================================
+_______ test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle _______
+
+tmp_path = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}/Temp/pytest-of-Andrea/pytest-0/test_real_L0_pipeline_and_prov0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016382720EC0>
+
+    def test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle(tmp_path, monkeypatch):
+        frame = synthetic_curated(n_per_class=120, seed=4)
+        split_dir = tmp_path / "splits"
+        generate_splits(frame, output_dir=split_dir,
+                        config=SplitConfig(seeds=(0, 1), test_per_class=2, val_per_class=2))
+        fitted_labels = []
+        real_make_features = e03.make_features
+    
+        def watched_features(df, scaler=None):
+            if scaler is None:
+                fitted_labels.append(set(df["label"]))
+            return real_make_features(df, scaler)
+    
+        monkeypatch.setattr(e03, "make_features", watched_features)
+        result = e03.run_experiment(frame, seeds=[0, 1], held_outs=["Fast_Scattering", "Blip"],
+                                    budget=1, cv_folds=2, n_qubits=7, layers=1, s=.3,
+                                    max_train=32, max_val=32, max_test=64, bootstrap=20,
+                                    event_bootstrap=40,
+                                    split_dir=split_dir, artifact_dir=tmp_path / "out", store_bloch=False)
+        assert len(result) == 4 * 4 * 2 * 5
+        assert set(result["model"]) == set(e03.MODELS)
+        assert np.isfinite(result["value"]).all()
+        assert result["value"].between(-1e-12, 1 + 1e-12).all()
+        assert (result["n_configs_evaluated"] == 1).all()
+        assert all("Fast_Scattering" not in labels for labels in fitted_labels)
+        assert "Blip" not in fitted_labels[-1]
+        out = tmp_path / "out"
+        assert json.loads((out / "manifest.json").read_text())["status"] == "complete"
+        audit = json.loads((out / "audit.json").read_text())
+        assert all(case["full_partition_leakage_checked"] for case in audit)
+        assert all(model["validation_fpr"] <= .01 for case in audit for model in case["models"].values())
+        assert all(len(model["inner_preprocessing_folds"]) == len({part["train_ids_sha256"] for part in case["selection_folds"]})
+                   for case in audit for model in case["models"].values())
+        assert (out / "e03_event_bootstrap.csv").is_file()
+        assert (out / "e03_event_paired_differences.csv").is_file()
+        with gzip.open(out / "selected_ids.json.gz", "rt") as file:
+            selections = json.load(file)
+        for family in ("Fast_Scattering", "Blip"):
+            cases = [case for case in selections if case["held_out"] == family]
+            assert cases[0]["test"] == cases[1]["test"]
+            predictions = pd.read_csv(out / "predictions" / (family + ".csv.gz"))
+            for case in cases:
+                frozen = load_split("P2", case["seed"], held_out=family, split_dir=split_dir)
+                for name, ids in zip(("train", "val", "test"), (frozen.train_ids, frozen.val_ids, frozen.test_ids)):
+                    assert set(case[name]) <= set(ids)
+                assert set(case["train"]).isdisjoint(case["val"])
+            assert set(predictions["seed"]) == {0, 1}
+        assert (out / "roc_fast_scattering.png").stat().st_size > 0
+        assert (out / "roc_rotations.png").stat().st_size > 0
+        cached_csv = tmp_path / "curated.csv"
+        frame.to_csv(cached_csv, index=False, float_format="%.17g")
+>       verified = verify_results(out, split_dir, cached_csv)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_e03.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+directory = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}/Temp/pytest-of-Andrea/pytest-0/test_real_L0_pipeline_and_prov0/out')
+split_dir = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}/Temp/pytest-of-Andrea/pytest-0/test_real_L0_pipeline_and_prov0/splits')
+curated_csv = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}/Temp/pytest-of-Andrea/pytest-0/test_real_L0_pipeline_and_prov0/curated.csv')
+progress = False
+
+    def verify_results(directory, split_dir=None, curated_csv=None, progress=False):
+        """Recalculate metrics from saved float64 scores; do not trust the tables."""
+        directory = Path(directory)
+        repository = Path(__file__).resolve().parent.parent
+        manifest = verify_complete_artifacts(directory, repository=repository)
+        with gzip.open(directory / "selected_ids.json.gz", "rt") as file:
+            selections = json.load(file)
+        settings = manifest["settings"]
+        keys = {(family, seed) for family in settings["held_outs"] for seed in settings["seeds"]}
+        selected = case_index(selections, keys)
+        audit = case_index(json.loads((directory / "audit.json").read_text()), keys)
+        splits = Path(split_dir) if split_dir is not None else DEFAULT_SPLIT_DIR
+        split_manifest = json.loads((splits / "manifest.json").read_text())
+        if _hash(splits / "manifest.json") != manifest["split_manifest_sha256"]:
+            raise ValueError("split version differs from the experiment")
+        if split_manifest["dataset_sha256"] != manifest["dataset_sha256"]:
+            raise ValueError("experiment dataset fingerprint differs from frozen D-04")
+        entries = {(entry["held_out"], entry["seed"]): entry for entry in split_manifest["splits"]
+                   if entry["protocol"] == "P2"}
+        with np.load(splits / "catalog.npz", allow_pickle=False) as file:
+            labels = dict(zip(file["id"].tolist(), file["label"].tolist()))
+        curated = None
+        if curated_csv is not None:
+            curated = pd.read_csv(curated_csv, float_precision="round_trip")
+            verify_dataset(curated, split_dir=splits)
+            curated = curated.set_index("id", drop=False, verify_integrity=True)
+        metrics = pd.read_csv(directory / "e03_metrics.csv", float_precision="round_trip")
+        recalculated = 0
+        event_rows, event_differences = [], []
+        for family in settings["held_outs"]:
+            if progress:
+                print(f"Verifying {family}: scores, frozen partitions and scaler states", flush=True)
+            predictions = pd.read_csv(directory / "predictions" / (family + ".csv.gz"), float_precision="round_trip")
+            validation = pd.read_csv(directory / "validation_scores" / (family + ".csv.gz"),
+                                     float_precision="round_trip")
+            if (set(validation["seed"]) != set(settings["seeds"])
+                    or not validation["held_out"].eq(family).all()):
+                raise ValueError("validation fold/seed mismatch")
+            if set(predictions["seed"]) != set(settings["seeds"]) or not predictions["held_out"].eq(family).all():
+                raise ValueError("prediction fold/seed mismatch")
+            fixed_test = None
+            for seed in settings["seeds"]:
+                case = selected[family, seed]
+                info = audit[family, seed]
+                frozen = load_split("P2", seed, held_out=family, split_dir=splits)
+                unknown = info["unknown_classes"]
+                if unknown != entries[family, seed]["unknown_classes"]:
+                    raise ValueError("audited unknown families differ from the frozen manifest")
+                if HELD_OUT not in unknown or family not in unknown:
+                    raise ValueError("P2 manifest does not reserve the required unknown families")
+                full_sets = [set(ids) for ids in (frozen.train_ids, frozen.val_ids, frozen.test_ids)]
+                if (full_sets[0] & full_sets[1] or full_sets[0] & full_sets[2]
+                        or full_sets[1] & full_sets[2]):
+                    raise ValueError("full partition ID leakage")
+                if not set(unknown) <= {labels[id_] for id_ in frozen.test_ids}:
+                    raise ValueError("full test is missing an unknown family")
+                for name, partition in zip(("train", "val", "test"), (frozen.train_ids, frozen.val_ids, frozen.test_ids)):
+                    if len(case[name]) != len(set(case[name])) or not set(case[name]) <= set(partition):
+                        raise ValueError("sample is not a subset of the frozen partition")
+                    if _id_hash(case[name]) != info["id_sha256"][name]:
+                        raise ValueError("selected-ID audit mismatch")
+                    if name != "test" and any(labels[id_] in unknown for id_ in partition):
+                        raise ValueError("held-out label in a FULL train/validation partition")
+                if set(case["train"]) & set(case["val"]) or set(case["train"]) & set(case["test"]) or set(case["val"]) & set(case["test"]):
+                    raise ValueError("selected ID leakage")
+                training_labels = np.asarray([labels[id_] for id_ in case["train"]])
+                selection_splits = novelty_selection_splits(training_labels, seed=seed,
+                                                             cv_folds=settings["cv_folds"])
+                fold_count = len(selection_splits)
+                expected_inner_hashes = {
+                    _id_hash([case["train"][index] for index in part["train"]])
+                    for part in selection_splits
+                }
+                nu_fit, _ = novelty_final_calibration_split(len(case["train"]), seed=seed,
+                                                           cv_folds=settings["cv_folds"])
+                expected_folds = [dict(surrogate_family=part["family"], fold=part["fold"],
+                    n_train=len(part["train"]), n_known=len(part["calibration"]),
+                    n_surrogate=len(part["surrogate"])) for part in selection_splits]
+                expected_membership = [dict(surrogate_family=part["family"], fold=part["fold"],
+                    train_ids_sha256=_id_hash([case["train"][index] for index in part["train"]]),
+                    known_ids_sha256=_id_hash([case["train"][index] for index in part["calibration"]]),
+                    surrogate_ids_sha256=_id_hash([case["train"][index] for index in part["surrogate"]]))
+                    for part in selection_splits]
+                if info["selection_folds"] != expected_membership:
+                    raise ValueError("surrogate selection IDs differ from known-training fold membership")
+                for model_name in MODELS:
+                    model_audit = info["models"][model_name]
+                    selector = build_baseline("rbf_ocsvm" if model_name == "projected_ocsvm" else model_name,
+                                              budget=settings["budget"], seed=seed, cv_folds=settings["cv_folds"])
+                    candidates, grid = novelty_candidate_configurations(selector)
+                    validate_hyperparameters(model_audit, candidates, grid, expected_folds)
+                    inner_records = model_audit["inner_preprocessing_folds"]
+                    if (len(inner_records) != len(expected_inner_hashes)
+                            or {record["ids_sha256"] for record in inner_records} != expected_inner_hashes
+                            or any(record["role"] != "inner_cv_training" for record in inner_records)):
+                        raise ValueError("fold scaler membership differs from M-04 inner training IDs")
+                    if model_audit["outer_preprocessing"]["ids_sha256"] != _id_hash(case["train"]):
+                        raise ValueError("final scaler was not fitted on the selected outer training IDs")
+                    if model_audit["nu_calibration_preprocessing"]["ids_sha256"] != _id_hash(
+                            [case["train"][index] for index in nu_fit]):
+                        raise ValueError("nu calibration scaler used incompatible training IDs")
+                    for field, outer_field in (("scaler_center", "scaler_center"), ("scaler_scale", "scaler_scale")):
+                        if model_audit["outer_preprocessing"][field] != info[outer_field]:
+                            raise ValueError("a model's final scaler differs from the common outer scaler")
+                if curated is not None:
+                    _, scaler = make_features(curated.loc[case["train"]])
+                    if not np.array_equal(scaler.center_, np.array(info["scaler_center"])) or not np.array_equal(scaler.scale_, np.array(info["scaler_scale"])):
+                        raise ValueError("scaler does not reproduce from selected training rows")
+                    for model_name in MODELS:
+                        records = [*info["models"][model_name]["inner_preprocessing_folds"],
+                                   info["models"][model_name]["nu_calibration_preprocessing"]]
+                        for record in records:
+                            matched = [
+                                [case["train"][index] for index in indices]
+                                for indices in [*(part["train"] for part in selection_splits), nu_fit]
+                                if _id_hash([case["train"][index] for index in indices]) == record["ids_sha256"]
+                            ]
+                            if len(matched) != 1:
+>                               raise ValueError("inner scaler audit does not map to one fold")
+E                               ValueError: inner scaler audit does not map to one fold
+
+experiments\e03_report.py:141: ValueError
+---------------------------- Captured stdout call -----------------------------
+E03 1/4: Fast_Scattering, seed=0, train/val/test=32/32/64
+E03 2/4: Fast_Scattering, seed=1, train/val/test=32/32/64
+E03 3/4: Blip, seed=0, train/val/test=32/32/64
+E03 4/4: Blip, seed=1, train/val/test=32/32/64
+------------------------------ Captured log call ------------------------------
+WARNING  matplotlib:__init__.py:537 mkdir -p failed for path C:\Users\Andrea\.matplotlib: [WinError 5] Accesso negato: 'C:\\Users\\Andrea\\.matplotlib'
+WARNING  matplotlib:__init__.py:554 Matplotlib created a temporary cache directory at C:\Users\Andrea\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\Temp\matplotlib-cra3_7y6 because there was an issue with the default path (C:\Users\Andrea\.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+_____ test_parallel_rotations_preserve_case_provenance_and_paired_metrics _____
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\process.py", line 264, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Andrea\Documents\Qiskit\Q_SPY\Q-Spy\experiments\e03_parallel.py", line 26, in _run_fold
+    return run_experiment(frame, held_outs=[family], **arguments)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Andrea\Documents\Qiskit\Q_SPY\Q-Spy\experiments\e03_novelty.py", line 494, in run_experiment
+    _write_gzip(out / "validation_scores" / (family + ".csv.gz"),
+  File "C:\Users\Andrea\Documents\Qiskit\Q_SPY\Q-Spy\experiments\e03_novelty.py", line 50, in _write_gzip
+    with Path(path).open("wb") as file:
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\Andrea\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\AC\\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\\Temp\\pytest-of-Andrea\\pytest-0\\test_parallel_rotations_preser0\\parallel\\partial_rotations\\Fast_Scattering\\validation_scores\\Fast_Scattering.csv.gz'
+"""
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}/Temp/pytest-of-Andrea/pytest-0/test_parallel_rotations_preser0')
+
+    def test_parallel_rotations_preserve_case_provenance_and_paired_metrics(tmp_path):
+        frame = synthetic_curated(n_per_class=120, seed=4)
+        splits = tmp_path / "splits"
+        generate_splits(frame, output_dir=splits,
+                        config=SplitConfig(seeds=(0, 1), test_per_class=2, val_per_class=2))
+        out = tmp_path / "parallel"
+>       metrics = run_parallel(frame, workers=2, seeds=[0, 1], held_outs=["Fast_Scattering", "Blip"],
+                               budget=1, cv_folds=2, n_qubits=7, layers=1, s=.3,
+                               max_train=32, max_val=32, max_test=64, bootstrap=20,
+                               event_bootstrap=40,
+                               split_dir=str(splits), artifact_dir=str(out), store_bloch=False)
+
+tests\test_e03.py:184: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+experiments\e03_parallel.py:120: in run_parallel
+    future.result()
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = None
+
+    def __get_result(self):
+        if self._exception:
+            try:
+>               raise self._exception
+E               FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\Andrea\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\AC\\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\\Temp\\pytest-of-Andrea\\pytest-0\\test_parallel_rotations_preser0\\parallel\\partial_rotations\\Fast_Scattering\\validation_scores\\Fast_Scattering.csv.gz'
+
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:401: FileNotFoundError
+---------------------------- Captured stdout call -----------------------------
+E03 1/2: Blip, seed=0, train/val/test=32/32/64
+
+E03 1/2: Fast_Scattering, seed=0, train/val/test=32/32/64
+
+E03 2/2: Blip, seed=1, train/val/test=32/32/64
+
+E03 2/2: Fast_Scattering, seed=1, train/val/test=32/32/64
+
+_______ test_failed_rotation_can_resume_only_matching_verified_workers ________
+
+self = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3...led_rotation_can_resum0/results/partial_rotations/Fast_Scattering/bloch/e03-Fast_Scattering-seed0-3f0a28607a-922f0649')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] Impossibile trovare il percorso specificato: 'C:\\Users\\Andrea\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\AC\\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\\Temp\\pytest-of-Andrea\\pytest-0\\test_failed_rotation_can_resum0\\results\\partial_rotations\\Fast_Scattering\\bloch\\e03-Fast_Scattering-seed0-3f0a28607a-922f0649'
+
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py:1311: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+experiment = (             id           gps ifo  ...   amplitude  run  is_held_out
+0    syn-000000  1.126207e+09  L1  ...  428.3672...rotation_can_resum0/splits'), {'workers': 1, 'seeds': [0], 'held_outs': ['Fast_Scattering', 'Blip'], 'budget': 1, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000163CDDDCC80>
+
+    def test_failed_rotation_can_resume_only_matching_verified_workers(experiment, monkeypatch):
+        frame, splits, params = experiment
+        real_run = parallel._run_fold
+    
+        def fail_second(data, family, arguments):
+            if family == "Blip":
+                raise RuntimeError("synthetic worker failure")
+            return real_run(data, family, arguments)
+    
+        monkeypatch.setattr(parallel, "_run_fold", fail_second)
+        with pytest.raises(RuntimeError, match="synthetic worker"):
+>           parallel.run_parallel(frame, **params)
+
+tests\test_e03_review.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+experiments\e03_parallel.py:120: in run_parallel
+    future.result()
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+tests\test_e03_review.py:36: in submit
+    future.set_result(function(*args))
+                      ^^^^^^^^^^^^^^^
+tests\test_e03_review.py:64: in fail_second
+    return real_run(data, family, arguments)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+experiments\e03_parallel.py:26: in _run_fold
+    return run_experiment(frame, held_outs=[family], **arguments)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+experiments\e03_novelty.py:330: in run_experiment
+    write_bloch(case, pd.concat([train, val, test])["id"].tolist(), B,
+store\io.py:21: in write_bloch
+    path.mkdir(parents=True, exist_ok=True)
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py:1316: in mkdir
+    self.mkdir(mode, parents=False, exist_ok=exist_ok)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3...led_rotation_can_resum0/results/partial_rotations/Fast_Scattering/bloch/e03-Fast_Scattering-seed0-3f0a28607a-922f0649')
+mode = 511, parents = False, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] Impossibile trovare il percorso specificato: 'C:\\Users\\Andrea\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\AC\\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\\Temp\\pytest-of-Andrea\\pytest-0\\test_failed_rotation_can_resum0\\results\\partial_rotations\\Fast_Scattering\\bloch\\e03-Fast_Scattering-seed0-3f0a28607a-922f0649'
+
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py:1311: FileNotFoundError
+_________ test_independent_verifier_recalculates_validation_threshold _________
+
+self = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3...drea/pytest-0/test_independent_verifier_reca0/results/partial_rotations/Blip/bloch/e03-Blip-seed0-73631c51b4-a0168e54')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 206] Nome del file o estensione troppo lunga: 'C:\\Users\\Andrea\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\AC\\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\\Temp\\pytest-of-Andrea\\pytest-0\\test_independent_verifier_reca0\\results\\partial_rotations\\Blip\\bloch\\e03-Blip-seed0-73631c51b4-a0168e54'
+
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py:1311: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+experiment = (             id           gps ifo  ...   amplitude  run  is_held_out
+0    syn-000000  1.126207e+09  L1  ...  428.3672...dent_verifier_reca0/splits'), {'workers': 1, 'seeds': [0], 'held_outs': ['Fast_Scattering', 'Blip'], 'budget': 1, ...})
+
+    def test_independent_verifier_recalculates_validation_threshold(experiment):
+        frame, splits, params = experiment
+>       parallel.run_parallel(frame, **params)
+
+tests\test_e03_review.py:94: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+experiments\e03_parallel.py:120: in run_parallel
+    future.result()
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+tests\test_e03_review.py:36: in submit
+    future.set_result(function(*args))
+                      ^^^^^^^^^^^^^^^
+experiments\e03_parallel.py:26: in _run_fold
+    return run_experiment(frame, held_outs=[family], **arguments)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+experiments\e03_novelty.py:330: in run_experiment
+    write_bloch(case, pd.concat([train, val, test])["id"].tolist(), B,
+store\io.py:21: in write_bloch
+    path.mkdir(parents=True, exist_ok=True)
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py:1316: in mkdir
+    self.mkdir(mode, parents=False, exist_ok=exist_ok)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/Andrea/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/AC/#!sandbox.{f0d69184-0620-4adc-8e94-3...drea/pytest-0/test_independent_verifier_reca0/results/partial_rotations/Blip/bloch/e03-Blip-seed0-73631c51b4-a0168e54')
+mode = 511, parents = False, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 206] Nome del file o estensione troppo lunga: 'C:\\Users\\Andrea\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\AC\\#!sandbox.{f0d69184-0620-4adc-8e94-3eb5c904d0e7}\\Temp\\pytest-of-Andrea\\pytest-0\\test_independent_verifier_reca0\\results\\partial_rotations\\Blip\\bloch\\e03-Blip-seed0-73631c51b4-a0168e54'
+
+C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\dependencies\python\Lib\pathlib.py:1311: FileNotFoundError
+=========================== short test summary info ===========================
+FAILED tests/test_e03.py::test_real_L0_pipeline_and_provenance_on_frozen_synthetic_bundle
+FAILED tests/test_e03.py::test_parallel_rotations_preserve_case_provenance_and_paired_metrics
+FAILED tests/test_e03_review.py::test_failed_rotation_can_resume_only_matching_verified_workers
+FAILED tests/test_e03_review.py::test_independent_verifier_recalculates_validation_threshold
+4 failed, 57 passed, 29 subtests passed in 37.79s
