@@ -227,3 +227,18 @@ def test_novelty_ocsvm_end_to_end_evaluate(bloch_loco_fixture) -> None:
     assert metrics["auroc"] > 0.90
     assert metrics["average_precision"] > 0.90
     assert metrics["tpr_at_1pct_fpr"] >= 0.80
+
+def test_novelty_ocsvm_precomputed_gram_matrix_mode(bloch_loco_fixture) -> None:
+    """Verify NoveltyOCSVM works on precomputed Gram matrices (e.g., fidelity kernel k_F)."""
+    X_train_known, X_test, y_test = bloch_loco_fixture
+    K_train = projected_quantum_kernel_matrix(X_train_known, X_train_known, gamma=0.05, n_qubits=8)
+    K_test = projected_quantum_kernel_matrix(X_test, X_train_known, gamma=0.05, n_qubits=8)
+
+    budget = 10
+    model = NoveltyOCSVM(kernel="precomputed", budget=budget, seed=42, cv_folds=5)
+    model.fit(K_train)
+    metrics = model.evaluate(K_test, y_test)
+
+    assert model.get_budget_report()["n_configs_evaluated"] == budget
+    assert "nu" in model.best_params_ and "gamma" not in model.best_params_
+    assert metrics["auroc"] > 0.90
