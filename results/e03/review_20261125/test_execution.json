@@ -1,0 +1,56 @@
+{
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\\dependencies\\python\\python.exe",
+  "versions": {
+    "numpy": "2.3.5",
+    "pandas": "3.0.1",
+    "scikit-learn": null,
+    "qiskit": null,
+    "qiskit-aer": null,
+    "pytest": null,
+    "matplotlib": null,
+    "PyYAML": null
+  },
+  "commands": {
+    "integrity_unittest": {
+      "command": [
+        "C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\\dependencies\\python\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_e03_integrity",
+        "-v"
+      ],
+      "exit_code": 0,
+      "seconds": 0.7826082999818027,
+      "tests_run": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "log_sha256": "63a04057a1286b84318366a321b77695466233702f3b1fd2fe1790bea95cadc2"
+    },
+    "scientific_pytest": {
+      "command": [
+        "C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1123-915-0_26.1123.915.0_x64__3k8sg7r9htsxt\\dependencies\\python\\python.exe",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_e03.py",
+        "tests/test_e03_metrics.py",
+        "tests/test_e03_preprocessing.py",
+        "tests/test_e03_review.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.03351239999756217,
+      "log_sha256": "33192c7109803c8a6413b816ba3c08f15a94b15144b8c28a96f5332edbc02d36"
+    }
+  },
+  "test_function_counts": {
+    "tests/test_e03.py": 11,
+    "tests/test_e03_integrity.py": 18,
+    "tests/test_e03_metrics.py": 4,
+    "tests/test_e03_preprocessing.py": 2,
+    "tests/test_e03_review.py": 5
+  }
+}

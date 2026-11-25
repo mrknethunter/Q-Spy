@@ -1,0 +1,57 @@
+........................................................F....                                                       [100%]
+================================== FAILURES ===================================
+_______ test_failed_rotation_can_resume_only_matching_verified_workers ________
+
+experiment = (             id           gps ifo  ...   amplitude  run  is_held_out
+0    syn-000000  1.126207e+09  L1  ...  428.3672...rotation_can_resum0/splits'), {'workers': 1, 'seeds': [0], 'held_outs': ['Fast_Scattering', 'Blip'], 'budget': 1, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002435E704770>
+
+    def test_failed_rotation_can_resume_only_matching_verified_workers(experiment, monkeypatch):
+        frame, splits, params = experiment
+        real_run = parallel._run_fold
+    
+        def fail_second(data, family, arguments):
+            if family == "Blip":
+                raise RuntimeError("synthetic worker failure")
+            return real_run(data, family, arguments)
+    
+        monkeypatch.setattr(parallel, "_run_fold", fail_second)
+        with pytest.raises(RuntimeError, match="synthetic worker"):
+            parallel.run_parallel(frame, **params)
+        out = parallel.Path(params["artifact_dir"])
+        assert json.loads((out / "manifest.json").read_text())["status"] == "failed"
+        assert (out / "partial_rotations/Fast_Scattering/manifest.json").is_file()
+        executed = []
+    
+        def watched(data, family, arguments):
+            executed.append(family)
+            return real_run(data, family, arguments)
+    
+        monkeypatch.setattr(parallel, "_run_fold", watched)
+        metrics = parallel.run_parallel(frame, resume=True, **params)
+        assert executed == ["Blip"]
+>       assert verify_results(out, splits)["metric_values_recalculated"] == len(metrics)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_e03_review.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+experiments\e03_report.py:231: in verify_results
+    pd.testing.assert_frame_equal(actual, expected, check_dtype=False, rtol=1e-12, atol=1e-12)
+pandas/_libs/testing.pyx:55: in pandas._libs.testing.assert_almost_equal
+    ???
+pandas/_libs/testing.pyx:160: in pandas._libs.testing.assert_almost_equal
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+E   FutureWarning: Mismatched null-like values nan and None found. In a future version, pandas equality-testing functions (e.g. assert_frame_equal) will consider these not-matching and raise.
+
+pandas/_libs/testing.pyx:191: FutureWarning
+---------------------------- Captured stdout call -----------------------------
+E03 1/1: Fast_Scattering, seed=0, train/val/test=32/32/64
+E03 completed rotation: Fast_Scattering
+E03 1/1: Blip, seed=0, train/val/test=32/32/64
+E03 completed rotation: Blip
+=========================== short test summary info ===========================
+FAILED tests/test_e03_review.py::test_failed_rotation_can_resume_only_matching_verified_workers
+1 failed, 60 passed, 29 subtests passed in 58.19s

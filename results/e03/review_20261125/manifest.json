@@ -1,0 +1,22 @@
+{
+  "experiment": "E-03 review",
+  "protocol": "P2",
+  "tier": "L0",
+  "status": "blocked",
+  "acceptance_status": "IMPLEMENTED — NOT VALIDATED",
+  "completed_experimental_cases": 0,
+  "review_date": "2026-11-25",
+  "files": {
+    "archive_provenance.json": "8d1cfe364f633e044e3c6733729e6bb71e84055fdc1ae7c94a8f037e9211b761",
+    "final_safety_audit.json": "d87d560558b97134a561dceb78286bd8a2a0424e2db8fa6a5e30681bc721fc1f",
+    "frozen_p2_check.json": "eab37d5e23377e487a25557c235850a4ce56d9d13bc77e6364470b5660ce47b2",
+    "historical_validation_receipt.json": "402d831b00fc00f476f0a2cc10be491f9f8055bbe19c5103dab6d3e421a25e65",
+    "initial_state.json": "ad6cb03878ea7fce29b2684670409d9ae3fd625e46df6cd3d20ff1592ec7581b",
+    "integrity_unittest.log": "63a04057a1286b84318366a321b77695466233702f3b1fd2fe1790bea95cadc2",
+    "prior_artifact_audit.json": "38b6d04b0809910f7a619d0284064c06c46d86b986fc9b70e55697770cbe434a",
+    "pull_request_description.md": "53d52dec1a656891270201608952c5b5685f424d92b17ee51c1ef078c4204cf3",
+    "scientific_pytest.log": "33192c7109803c8a6413b816ba3c08f15a94b15144b8c28a96f5332edbc02d36",
+    "test_execution.json": "c404c43cfb5eb607eb1d8ed4532bb8aed3c17694d829c8cd5de855acd3f4967a"
+  },
+  "reason": "No pinned scientific runtime or real raw/curated features; prior score/ID artifacts missing."
+}

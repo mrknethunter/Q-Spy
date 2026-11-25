@@ -1,0 +1,883 @@
+{
+  "status": "pass",
+  "scope": "frozen full P2 partition membership only; no fitting or metric validation",
+  "cases_checked": 80,
+  "families": 8,
+  "catalog_rows": 318801,
+  "numpy": "2.3.5",
+  "pandas": "3.0.1",
+  "runtime": "bundled Python 3.12; not project-pinned scientific environment",
+  "seconds": 28.047607999993488,
+  "cases": [
+    {
+      "family": "Fast_Scattering",
+      "seed": 0,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 0,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 0,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 0,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 0,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 0,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 0,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 0,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 1,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 1,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 1,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 1,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 1,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 1,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 1,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 1,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 2,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 2,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 2,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 2,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 2,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 2,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 2,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 2,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 3,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 3,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 3,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 3,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 3,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 3,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 3,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 3,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 4,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 4,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 4,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 4,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 4,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 4,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 4,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 4,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 5,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 5,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 5,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 5,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 5,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 5,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 5,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 5,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 6,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 6,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 6,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 6,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 6,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 6,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 6,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 6,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 7,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 7,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 7,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 7,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 7,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 7,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 7,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 7,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 8,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 8,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 8,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 8,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 8,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 8,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 8,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 8,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    },
+    {
+      "family": "Fast_Scattering",
+      "seed": 9,
+      "n_train": 157386,
+      "n_val": 52453,
+      "n_test": 108962,
+      "unknown_classes": [
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Blip",
+      "seed": 9,
+      "n_train": 144134,
+      "n_val": 48036,
+      "n_test": 126631,
+      "unknown_classes": [
+        "Blip",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Extremely_Loud",
+      "seed": 9,
+      "n_train": 145267,
+      "n_val": 48415,
+      "n_test": 125119,
+      "unknown_classes": [
+        "Extremely_Loud",
+        "Fast_Scattering"
+      ]
+    },
+    {
+      "family": "Koi_Fish",
+      "seed": 9,
+      "n_train": 145936,
+      "n_val": 48639,
+      "n_test": 124226,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Koi_Fish"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Burst",
+      "seed": 9,
+      "n_train": 140662,
+      "n_val": 46879,
+      "n_test": 131260,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Burst"
+      ]
+    },
+    {
+      "family": "Low_Frequency_Lines",
+      "seed": 9,
+      "n_train": 145778,
+      "n_val": 48584,
+      "n_test": 124439,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Low_Frequency_Lines"
+      ]
+    },
+    {
+      "family": "Scattered_Light",
+      "seed": 9,
+      "n_train": 89771,
+      "n_val": 29916,
+      "n_test": 199114,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Scattered_Light"
+      ]
+    },
+    {
+      "family": "Tomte",
+      "seed": 9,
+      "n_train": 132768,
+      "n_val": 44249,
+      "n_test": 141784,
+      "unknown_classes": [
+        "Fast_Scattering",
+        "Tomte"
+      ]
+    }
+  ]
+}

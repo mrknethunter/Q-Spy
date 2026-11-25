@@ -1,0 +1,6 @@
+{
+  "status": "pass",
+  "cases_checked": 80,
+  "same_selected_train_validation_test_ID_hashes": 80,
+  "note": "Historical score files remain unavailable; this verifies matched inputs, not old metric values."
+}

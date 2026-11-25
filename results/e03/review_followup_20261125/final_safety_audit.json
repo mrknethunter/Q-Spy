@@ -1,0 +1,27 @@
+{
+  "status": "pass",
+  "changed_from_initial": [
+    "docs/E03.md",
+    "docs/E03_IMPLEMENTATION_AUDIT.md",
+    "docs/E03_results.md",
+    "docs/E03_validation.json",
+    "docs/GUIDA_E03_IT.md",
+    "experiments/e03_metrics.py",
+    "experiments/e03_novelty.py",
+    "experiments/e03_parallel.py",
+    "experiments/e03_preprocessing.py",
+    "experiments/e03_report.py",
+    "models/base.py",
+    "models/baselines.py",
+    "tests/test_e03.py",
+    "tests/test_e03_metrics.py",
+    "experiments/rq4/e03_gravityspy.yaml"
+  ],
+  "unauthorized_paths": [],
+  "historical_result_files_unchanged": 20,
+  "generation_sources_match_replay": 25,
+  "parallel_verifier_source_matches_receipt": true,
+  "packages_sha256_checked": 9,
+  "input_archive_unchanged": true,
+  "external_archive_files_checked": 293
+}
