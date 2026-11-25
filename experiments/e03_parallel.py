@@ -12,15 +12,38 @@ import pandas as pd
 from threadpoolctl import threadpool_limits
 
 from data.curate import HELD_OUT, KNOWN_CLASSES
-from experiments.e03_novelty import ROOT, _hash, _json, _plot_rocs, _write_gzip, run_experiment, summarize
+
+
+def _concat_frames(frames, *, columns=None):
+    """Concatenate same-schema tables without asking pandas to infer empty dtypes."""
+    frames = list(frames)
+    if not frames:
+        return pd.DataFrame(columns=columns)
+
+    schema = list(frames[0].columns) if columns is None else list(columns)
+    if any(list(frame.columns) != schema for frame in frames):
+        raise ValueError("cannot concatenate frames with different column schemas")
+
+    nonempty = [frame for frame in frames if not frame.empty]
+    if not nonempty:
+        return pd.DataFrame(columns=schema)
+    return pd.concat(nonempty, ignore_index=True).loc[:, schema]
 
 
 def _run_fold(frame, family, arguments):
+    from experiments.e03_novelty import run_experiment
+
     with threadpool_limits(limits=1):
         return run_experiment(frame, held_outs=[family], **arguments)
 
 
 def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03", **parameters):
+    # Keep the table helper importable in lightweight environments where Aer is
+    # not installed; the experiment dependencies are needed only when running.
+    from experiments.e03_novelty import (
+        ROOT, _hash, _json, _plot_rocs, _write_gzip, summarize,
+    )
+
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
         raise ValueError("workers must be a positive integer")
     families = [HELD_OUT, *KNOWN_CLASSES] if held_outs is None else list(held_outs)
@@ -79,23 +102,23 @@ def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03"
                 if key != "held_outs" and child["settings"][key] != value:
                     raise ValueError(f"rotation settings differ: {key}")
         metric_frames = [pd.read_csv(child / "e03_metrics.csv", float_precision="round_trip") for child in children]
-        metrics = pd.concat(metric_frames, ignore_index=True)
+        metrics = _concat_frames(metric_frames)
         summary, paired = summarize(metrics, bootstrap=reference["settings"]["bootstrap"])
         metrics.to_csv(out / "e03_metrics.csv", index=False)
         summary.to_csv(out / "e03_summary.csv", index=False)
         paired.to_csv(out / "e03_paired_differences.csv", index=False)
-        pd.concat([pd.read_csv(child / "e03_event_bootstrap.csv", float_precision="round_trip")
-                   for child in children], ignore_index=True).to_csv(
+        _concat_frames([pd.read_csv(child / "e03_event_bootstrap.csv", float_precision="round_trip")
+                        for child in children]).to_csv(
                        out / "e03_event_bootstrap.csv", index=False)
-        pd.concat([pd.read_csv(child / "e03_event_paired_differences.csv", float_precision="round_trip")
-                   for child in children], ignore_index=True).to_csv(
+        _concat_frames([pd.read_csv(child / "e03_event_paired_differences.csv", float_precision="round_trip")
+                        for child in children]).to_csv(
                        out / "e03_event_paired_differences.csv", index=False)
-        curves = pd.concat([pd.read_csv(child / "roc_curves.csv.gz", float_precision="round_trip")
-                            for child in children], ignore_index=True)
+        curves = _concat_frames([pd.read_csv(child / "roc_curves.csv.gz", float_precision="round_trip")
+                                 for child in children])
         _write_gzip(out / "roc_curves.csv.gz", curves)
         for name in ("family_errors.csv", "neighbors_fast_misses.csv"):
-            pd.concat([pd.read_csv(child / name, float_precision="round_trip") for child in children],
-                      ignore_index=True).to_csv(out / name, index=False)
+            frames = [pd.read_csv(child / name, float_precision="round_trip") for child in children]
+            _concat_frames(frames).to_csv(out / name, index=False)
         audit, selections = [], []
         (out / "predictions").mkdir()
         (out / "validation_scores").mkdir()
