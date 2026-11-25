@@ -1,4 +1,4 @@
-# Q-Spy — Quantum Machine Learning for Astrophysics
+# Q-Spy - Quantum Machine Learning for Astrophysics
 
 **Projected quantum kernels to classify and discover glitches in LIGO data.**
 
