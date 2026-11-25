@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared model interfaces and equal-budget hyperparameter tuning for FewShotSVC, NoveltyOCSVM and baseline models."""
+"""Shared model interfaces and equal-budget hyperparameter tuning (M-02..M-04)."""
 
 from __future__ import annotations
 
@@ -11,13 +11,42 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import f1_score
 from sklearn.model_selection import KFold, ParameterGrid, StratifiedKFold
 
+try:
+    from kernels.classical import GAMMA_GRID
+except ImportError:
+    GAMMA_GRID: list[float | str] = ["scale", "auto", 1e-3, 1e-2, 1e-1, 1.0]
+
+
+def as_2d_float64(X: np.ndarray) -> np.ndarray:
+    """Ensure representation Z is a 2D float64 array (flattening 3D Bloch tensors if passed)."""
+    arr = np.asarray(X, dtype=np.float64)
+    return arr.reshape(arr.shape[0], -1) if arr.ndim == 3 else arr
+
+
+def resolve_gamma(
+    X: np.ndarray,
+    gamma: float | str | None = "scale",
+    *,
+    n_qubits: int | None = None,
+) -> float:
+    """Resolve `'scale'`, `'auto'`, or numeric gamma into a positive float64 scalar."""
+    if isinstance(gamma, (int, float)) and not isinstance(gamma, bool):
+        val = float(gamma)
+        if not np.isfinite(val) or val <= 0.0:
+            raise ValueError(f"gamma must be finite and > 0, got {gamma!r}")
+        return val / float(n_qubits) if n_qubits is not None else val
+
+    n_features = float(X.shape[1])
+    if gamma is None or gamma == "auto":
+        return 1.0 / n_features
+    if gamma == "scale":
+        x_var = float(np.var(X))
+        return 1.0 / (n_features * x_var) if x_var > 0.0 else 1.0 / n_features
+    raise ValueError(f"Unsupported gamma specification: {gamma!r}")
+
 
 class BaseBudgetedModel(ABC):
-    """Common interface and equal-budget hyperparameter tuning.
-
-    Every model receives the exact same maximum number of hyperparameter
-    configurations (`budget`) and a deterministic `seed` for reproducibility.
-    """
+    """Common interface and equal-budget hyperparameter tuning across quantum and classical models."""
 
     task: str  # "fewshot" or "novelty"
     model_name: str
@@ -40,18 +69,20 @@ class BaseBudgetedModel(ABC):
 
     @abstractmethod
     def _param_grid(self) -> dict[str, list[Any]]:
-        """Return the candidate hyperparameter search space."""
+        """Return candidate hyperparameter search space."""
 
     @abstractmethod
     def _build_estimator(self, params: dict[str, Any]) -> BaseEstimator:
         """Instantiate a fresh underlying estimator for a given parameter dict."""
+
+    def _is_precomputed(self) -> bool:
+        return getattr(self, "kernel", None) == "precomputed" and getattr(self, "kernel_fn", None) is None
 
     def _sample_configurations(self) -> list[dict[str, Any]]:
         """Deterministically select up to `self.budget` hyperparameter configurations."""
         all_configs = list(ParameterGrid(self._param_grid()))
         if not all_configs:
             return [{}]
-
         if len(all_configs) <= self.budget:
             return all_configs
 
@@ -60,13 +91,10 @@ class BaseBudgetedModel(ABC):
         return [all_configs[int(i)] for i in sorted(chosen_idx)]
 
     def _resolve_n_splits(self, y: np.ndarray) -> int:
-        """Ensure StratifiedKFold never fails on small k-shot regimes (e.g., k=5)."""
         _, counts = np.unique(y, return_counts=True)
         min_class_count = int(counts.min())
         if min_class_count < 2:
-            raise ValueError(
-                f"Need at least 2 samples per class for inner CV, got {min_class_count}."
-            )
+            raise ValueError(f"Need at least 2 samples per class for inner CV, got {min_class_count}.")
         return min(self.cv_folds, min_class_count)
 
     @abstractmethod
@@ -75,11 +103,11 @@ class BaseBudgetedModel(ABC):
 
     @abstractmethod
     def predict(self, X: np.ndarray) -> np.ndarray:
-        """Predict class labels (few-shot) or inlier/outlier flags (novelty)."""
+        """Predict class labels (few-shot) or binary anomaly flags 0/1 (novelty)."""
 
     @abstractmethod
     def score_samples(self, X: np.ndarray) -> np.ndarray:
-        """Return decision scores (class margins for few-shot, anomaly scores for novelty)."""
+        """Return class scores (few-shot) or anomaly scores where higher = more anomalous (novelty)."""
 
     def get_budget_report(self) -> dict[str, Any]:
         """Return auditable metadata proving equal-budget compliance."""
@@ -94,13 +122,8 @@ class BaseBudgetedModel(ABC):
         }
 
 
-# -----------------------------------------------------------------------------------------------
-# Few-Shot base model
-# -----------------------------------------------------------------------------------------------
-
-
 class BaseFewShotModel(BaseBudgetedModel, ABC):
-    """Base class for few-shot classifiers (both classical baselines and QSVC)."""
+    """Base class for few-shot classifiers (both classical baselines and FewShotSVC)."""
 
     task = "fewshot"
 
@@ -108,13 +131,16 @@ class BaseFewShotModel(BaseBudgetedModel, ABC):
         if y is None:
             raise ValueError("Few-shot classification requires target labels `y`.")
 
-        X_arr = np.asarray(X, dtype=np.float64)
+        X_arr = as_2d_float64(X)
         y_arr = np.asarray(y)
+        precomputed = self._is_precomputed()
+        if precomputed and (X_arr.ndim != 2 or X_arr.shape[0] != X_arr.shape[1]):
+            raise ValueError(f"Precomputed kernel must be square 2D, got {X_arr.shape}.")
 
         configs = self._sample_configurations()
         n_splits = self._resolve_n_splits(y_arr)
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
-        splits = list(skf.split(X_arr, y_arr))
+        splits = list(skf.split(np.zeros(len(y_arr)), y_arr))
 
         best_score = -np.inf
         best_params: dict[str, Any] = {}
@@ -124,15 +150,16 @@ class BaseFewShotModel(BaseBudgetedModel, ABC):
             fold_scores: list[float] = []
             for train_idx, val_idx in splits:
                 est = self._build_estimator(params)
-                est.fit(X_arr[train_idx], y_arr[train_idx])
-                preds = est.predict(X_arr[val_idx])
+                X_tr = X_arr[np.ix_(train_idx, train_idx)] if precomputed else X_arr[train_idx]
+                X_va = X_arr[np.ix_(val_idx, train_idx)] if precomputed else X_arr[val_idx]
+                est.fit(X_tr, y_arr[train_idx])
+                preds = est.predict(X_va)
                 fold_scores.append(
                     float(f1_score(y_arr[val_idx], preds, average="macro", zero_division=0))
                 )
 
             mean_score = float(np.mean(fold_scores))
             self.cv_results_.append({"params": params, "mean_macro_f1": mean_score})
-
             if mean_score > best_score:
                 best_score = mean_score
                 best_params = params
@@ -149,12 +176,12 @@ class BaseFewShotModel(BaseBudgetedModel, ABC):
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self.best_estimator_ is None:
             raise RuntimeError("Model must be fitted before calling predict().")
-        return self.best_estimator_.predict(np.asarray(X, dtype=np.float64))
+        return self.best_estimator_.predict(as_2d_float64(X))
 
     def score_samples(self, X: np.ndarray) -> np.ndarray:
         if self.best_estimator_ is None:
             raise RuntimeError("Model must be fitted before calling score_samples().")
-        X_arr = np.asarray(X, dtype=np.float64)
+        X_arr = as_2d_float64(X)
         if hasattr(self.best_estimator_, "decision_function"):
             return self.best_estimator_.decision_function(X_arr)
         if hasattr(self.best_estimator_, "predict_proba"):
@@ -162,26 +189,10 @@ class BaseFewShotModel(BaseBudgetedModel, ABC):
         raise NotImplementedError(f"{self.model_name} does not expose continuous scores.")
 
 
-# -----------------------------------------------------------------------------------------------
-# Novelty Detection base model
-# -----------------------------------------------------------------------------------------------
-
-
 class BaseNoveltyModel(BaseBudgetedModel, ABC):
-    """Base class for novelty detectors (both classical baselines and NoveltyOCSVM).
-
-    Conventions:
-    - `fit(X, y=None)` expects `X` to contain ONLY known glitch families (no outliers).
-    - `predict(X)` returns `0` for known (inlier) and `1` for novel/anomalous (outlier).
-    - `score_samples(X)` returns continuous anomaly scores where higher = more anomalous.
-    """
+    """Base class for novelty detectors (higher score_samples = more anomalous)."""
 
     task = "novelty"
-
-    def _resolve_novelty_n_splits(self, n_samples: int) -> int:
-        if n_samples < 2:
-            raise ValueError(f"Need at least 2 samples for inner CV, got {n_samples}.")
-        return min(self.cv_folds, n_samples)
 
     def _score_known_validation_fold(
         self,
@@ -189,11 +200,8 @@ class BaseNoveltyModel(BaseBudgetedModel, ABC):
         X_val: np.ndarray,
         params: dict[str, Any],
     ) -> float:
-        """Evaluate hyperparameter calibration on a known-only validation fold."""
         raw_preds = estimator.predict(X_val)  # sklearn: +1 inlier, -1 outlier
         anomaly_scores = -estimator.decision_function(X_val)
-
-        # Reject collapsed/constant kernels that cannot rank anomalies
         if float(np.std(anomaly_scores)) < 1e-12:
             return -1.0
 
@@ -203,12 +211,17 @@ class BaseNoveltyModel(BaseBudgetedModel, ABC):
         return float(1.0 - abs(val_fpr - target_fpr) - excess_fpr_penalty)
 
     def fit(self, X: np.ndarray, y: np.ndarray | None = None) -> BaseNoveltyModel:
-        X_arr = np.asarray(X, dtype=np.float64)
-        configs = self._sample_configurations()
-        n_splits = self._resolve_novelty_n_splits(len(X_arr))
+        X_arr = as_2d_float64(X)
+        if len(X_arr) < 2:
+            raise ValueError(f"Need at least 2 samples for inner CV, got {len(X_arr)}.")
+        precomputed = self._is_precomputed()
+        if precomputed and (X_arr.ndim != 2 or X_arr.shape[0] != X_arr.shape[1]):
+            raise ValueError(f"Precomputed kernel must be square 2D, got {X_arr.shape}.")
 
+        configs = self._sample_configurations()
+        n_splits = min(self.cv_folds, len(X_arr))
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
-        splits = list(kf.split(X_arr))
+        splits = list(kf.split(np.zeros(len(X_arr))))
 
         best_score = -np.inf
         best_params: dict[str, Any] = {}
@@ -218,14 +231,13 @@ class BaseNoveltyModel(BaseBudgetedModel, ABC):
             fold_scores: list[float] = []
             for train_idx, val_idx in splits:
                 est = self._build_estimator(params)
-                est.fit(X_arr[train_idx])
-                fold_scores.append(
-                    self._score_known_validation_fold(est, X_arr[val_idx], params)
-                )
+                X_tr = X_arr[np.ix_(train_idx, train_idx)] if precomputed else X_arr[train_idx]
+                X_va = X_arr[np.ix_(val_idx, train_idx)] if precomputed else X_arr[val_idx]
+                est.fit(X_tr)
+                fold_scores.append(self._score_known_validation_fold(est, X_va, params))
 
             mean_score = float(np.mean(fold_scores))
             self.cv_results_.append({"params": params, "mean_calibration_score": mean_score})
-
             if mean_score > best_score:
                 best_score = mean_score
                 best_params = params
@@ -242,16 +254,16 @@ class BaseNoveltyModel(BaseBudgetedModel, ABC):
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self.best_estimator_ is None:
             raise RuntimeError("Model must be fitted before calling predict().")
-        raw_preds = self.best_estimator_.predict(np.asarray(X, dtype=np.float64))
+        raw_preds = self.best_estimator_.predict(as_2d_float64(X))
         return (raw_preds == -1).astype(int)
 
     def score_samples(self, X: np.ndarray) -> np.ndarray:
         if self.best_estimator_ is None:
             raise RuntimeError("Model must be fitted before calling score_samples().")
-        X_arr = np.asarray(X, dtype=np.float64)
-        return -np.asarray(self.best_estimator_.decision_function(X_arr), dtype=np.float64)
+        return -np.asarray(
+            self.best_estimator_.decision_function(as_2d_float64(X)), dtype=np.float64
+        )
 
 
-# Backwards-compatible aliases used by models/baselines.py
 BaseFewShotBaseline = BaseFewShotModel
 BaseNoveltyBaseline = BaseNoveltyModel
