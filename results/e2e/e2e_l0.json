@@ -1,0 +1,15 @@
+{
+  "run_tag": "e2e-20261125T125525Z",
+  "quick": false,
+  "embed_config": {
+    "n_qubits": 8,
+    "layers": 2,
+    "s": 0.1778,
+    "entangle": true
+  },
+  "k": 5,
+  "p1_test": 700,
+  "p2_train": 400,
+  "p2_test": 800,
+  "budget": 16
+}

@@ -1,0 +1,5 @@
+protocol,seed,k,model,n_train,n_test,n_configs,macro_f1,balanced_accuracy,held_out,auroc,average_precision,tpr_at_1pct_fpr
+P1,0,5.0,projected_svc,35,700,16,0.6422366647465673,0.6857142857142857,,,,
+P1,0,5.0,rbf_svm,35,700,16,0.7318333740003313,0.7357142857142858,,,,
+P2,0,,projected_ocsvm,402,799,16,,,Fast_Scattering,0.5305722891566266,0.5293881284622641,0.0
+P2,0,,rbf_ocsvm,402,799,16,,,Fast_Scattering,0.28436872489959836,0.38895033256584194,0.0
