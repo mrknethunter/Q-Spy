@@ -1,4 +1,6 @@
-# Issue draft — not yet opened
+# M-03 follow-up
+
+Issue: https://github.com/mrknethunter/Q-Spy/issues/69
 
 Title: [M-03 follow-up] Kernel novelty detectors on a shared Gram matrix
 

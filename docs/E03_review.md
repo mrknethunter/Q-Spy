@@ -136,12 +136,13 @@ training-ID hash, center, scale and point IDs for both sides.
 
 ## M-03 follow-up status
 
-Kernel density, kernel-space kNN and kernel-PCA reconstruction detectors are
-not implemented by this correction. `docs/M03_followup.md` contains a concrete
-issue body and acceptance criteria. Automatic creation was attempted but the
-GitHub connector returned 404 for this private repository: **the follow-up
-issue is not yet open**. Create it and reference its number in PR #67 to finish
-this review item; do not mark it resolved merely because this draft exists.
+Follow-up issue: https://github.com/mrknethunter/Q-Spy/issues/69
+
+Kernel density, kernel-space kNN and kernel-PCA reconstruction are tracked
+in that separate issue, as allowed by the PR review. They are not implemented
+by this E-03 correction. Acceptance criteria are in `docs/M03_followup.md`.
+The numerical validation receipt records its original preparation-time
+status; the follow-up was opened subsequently during review resolution.
 
 ## Warning correction
 
