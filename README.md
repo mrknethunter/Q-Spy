@@ -3,15 +3,15 @@
 **Projected quantum kernels to classify and discover glitches in LIGO data.**
 
 Q-Spy uses an IBM quantum computer as a feature extractor for LIGO glitch
-classification, and checks — honestly, with pre-registered rules — whether the
+classification, and checks  whether the
 quantum geometry adds anything over well-tuned classical methods.
 
 ## The problem
 LIGO measures length changes smaller than a proton, and at that sensitivity it
-records thousands of non-Gaussian noise transients — glitches — that can hide
+records thousands of non-Gaussian noise transients (glitches) that can hide
 or mimic real signals. Gravity Spy classifies them into families. Two gaps
 motivate Q-Spy: few-shot (a new family has only a handful of labels) and
-novelty detection (a closed-set classifier cannot say "this is new" — someone
+novelty detection (a closed-set classifier cannot say "this is new", someone
 had to discover Fast Scattering in O3 by hand).
 
 ## The idea
@@ -39,7 +39,7 @@ instead of full states: **3 circuits per glitch instead of N²/2** (360 vs 7140)
 ## The verdict
 **Two positive results, one negative.** The quantum pipeline runs on real IBM
 hardware at predicted cost and noise, and the projected kernel avoids
-concentration — but on 7 tabular features a well-tuned classical method matches
+concentration but on 7 tabular features a well-tuned classical method matches
 (few-shot) or slightly beats (novelty) it.
 
 > No quantum advantage — a negative result measured with rules fixed in advance.
@@ -48,19 +48,18 @@ Where an advantage could still live: richer inputs (spectrograms, auxiliary
 channels), non-simulable scales, and pre-screening with the geometric
 difference (implemented in G-02).
 
-## Pre-registered hypotheses (frozen in configs/hardware_frozen.yaml, tag hw-freeze)
-| H1 few-shot parity | supported at 5-seed preview; full test pending |
-| H2 entanglement helps | not yet tested |
-| H3 projected novelty advantage | **not supported** (−0.026 [−0.044, −0.008]) |
-| H4 on-chip KTA within 0.02 | **supported** (−0.006 [−0.010, −0.001]) |
-
 ## How we work
 Five people (lead + 4 areas), ~70 reviewed PRs, ~290 tests, interface contracts
 first, frozen hash-verified splits, every result regenerable from a script.
 
 ## Documentation
-pip install -r requirements-docs.txt && python -m mkdocs serve
-Quick figure regeneration: make figures - Full test suite: make test
+```bash
+$ pip install -r requirements-docs.txt && python -m mkdocs serve
+```
+Quick figure regeneration:
+```bash
+$ make figures Full test suite: make test
+```
 
 ## License
 GPL-3.0
