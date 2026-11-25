@@ -1,4 +1,15 @@
-# E-03 — Risultati L0: Gravity Spy D-02 (issue #29)
+# E-03 — Prior reported L0 results (not revalidated after audit)
+
+> **Current status:** These figures are preserved from a prior run. The audit
+> found that its inner-CV folds reused a scaler fitted on the full outer
+> training set, so the tuning procedure was not leakage-safe. The current
+> checkout also lacks the eight saved prediction archives and
+> `selected_ids.json.gz` listed in its old manifest. The numerical tables and
+> physics diagnostics below are historical outputs, not validated results for
+> the corrected implementation. They must not be used as E-03 acceptance
+> evidence. The corrected code now defines separate trigger-bootstrap
+> artifacts, but no replacement real-data intervals or results are claimed in
+> this report.
 
 ## Ambito della misura
 

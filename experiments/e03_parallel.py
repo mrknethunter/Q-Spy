@@ -9,16 +9,41 @@ import shutil
 import time
 
 import pandas as pd
+from threadpoolctl import threadpool_limits
 
 from data.curate import HELD_OUT, KNOWN_CLASSES
-from experiments.e03_novelty import ROOT, _hash, _json, _plot_rocs, _write_gzip, run_experiment, summarize
+
+
+def _concat_frames(frames, *, columns=None):
+    """Concatenate same-schema tables without asking pandas to infer empty dtypes."""
+    frames = list(frames)
+    if not frames:
+        return pd.DataFrame(columns=columns)
+
+    schema = list(frames[0].columns) if columns is None else list(columns)
+    if any(list(frame.columns) != schema for frame in frames):
+        raise ValueError("cannot concatenate frames with different column schemas")
+
+    nonempty = [frame for frame in frames if not frame.empty]
+    if not nonempty:
+        return pd.DataFrame(columns=schema)
+    return pd.concat(nonempty, ignore_index=True).loc[:, schema]
 
 
 def _run_fold(frame, family, arguments):
-    return run_experiment(frame, held_outs=[family], **arguments)
+    from experiments.e03_novelty import run_experiment
+
+    with threadpool_limits(limits=1):
+        return run_experiment(frame, held_outs=[family], **arguments)
 
 
 def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03", **parameters):
+    # Keep the table helper importable in lightweight environments where Aer is
+    # not installed; the experiment dependencies are needed only when running.
+    from experiments.e03_novelty import (
+        ROOT, _hash, _json, _plot_rocs, _write_gzip, summarize,
+    )
+
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
         raise ValueError("workers must be a positive integer")
     families = [HELD_OUT, *KNOWN_CLASSES] if held_outs is None else list(held_outs)
@@ -50,6 +75,23 @@ def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03"
         manifests = [json.loads((child / "manifest.json").read_text()) for child in children]
         if any(child["status"] != "complete" for child in manifests):
             raise ValueError("a rotation did not complete")
+        expected_seeds = set(manifests[0]["settings"]["seeds"])
+        for family, child_dir, child_manifest in zip(families, children, manifests):
+            if child_manifest["completed_cases"] != len(expected_seeds):
+                raise ValueError(f"rotation {family} has incomplete seed coverage")
+            if child_manifest["settings"]["held_outs"] != [family]:
+                raise ValueError(f"rotation {family} manifest identifies a different fold")
+            for relative, digest in child_manifest["files"].items():
+                path = child_dir / relative
+                if not path.is_file() or _hash(path) != digest:
+                    raise ValueError(f"rotation {family} output hash mismatch: {relative}")
+            audit = json.loads((child_dir / "audit.json").read_text())
+            cases = {(case["held_out"], case["seed"]) for case in audit}
+            if cases != {(family, seed) for seed in expected_seeds}:
+                raise ValueError(f"rotation {family} has missing or duplicated audit cases")
+            if (not (child_dir / "predictions" / f"{family}.csv.gz").is_file()
+                    or not (child_dir / "validation_scores" / f"{family}.csv.gz").is_file()):
+                raise ValueError(f"rotation {family} has no saved prediction file")
         # Shared source, input, settings and seeds must agree; only the family differs.
         reference = manifests[0]
         for child in manifests[1:]:
@@ -60,25 +102,34 @@ def run_parallel(frame, *, workers=4, held_outs=None, artifact_dir="results/e03"
                 if key != "held_outs" and child["settings"][key] != value:
                     raise ValueError(f"rotation settings differ: {key}")
         metric_frames = [pd.read_csv(child / "e03_metrics.csv", float_precision="round_trip") for child in children]
-        metrics = pd.concat(metric_frames, ignore_index=True)
+        metrics = _concat_frames(metric_frames)
         summary, paired = summarize(metrics, bootstrap=reference["settings"]["bootstrap"])
         metrics.to_csv(out / "e03_metrics.csv", index=False)
         summary.to_csv(out / "e03_summary.csv", index=False)
         paired.to_csv(out / "e03_paired_differences.csv", index=False)
-        curves = pd.concat([pd.read_csv(child / "roc_curves.csv.gz", float_precision="round_trip")
-                            for child in children], ignore_index=True)
+        _concat_frames([pd.read_csv(child / "e03_event_bootstrap.csv", float_precision="round_trip")
+                        for child in children]).to_csv(
+                       out / "e03_event_bootstrap.csv", index=False)
+        _concat_frames([pd.read_csv(child / "e03_event_paired_differences.csv", float_precision="round_trip")
+                        for child in children]).to_csv(
+                       out / "e03_event_paired_differences.csv", index=False)
+        curves = _concat_frames([pd.read_csv(child / "roc_curves.csv.gz", float_precision="round_trip")
+                                 for child in children])
         _write_gzip(out / "roc_curves.csv.gz", curves)
         for name in ("family_errors.csv", "neighbors_fast_misses.csv"):
-            pd.concat([pd.read_csv(child / name, float_precision="round_trip") for child in children],
-                      ignore_index=True).to_csv(out / name, index=False)
+            frames = [pd.read_csv(child / name, float_precision="round_trip") for child in children]
+            _concat_frames(frames).to_csv(out / name, index=False)
         audit, selections = [], []
         (out / "predictions").mkdir()
+        (out / "validation_scores").mkdir()
         for child in children:
             audit.extend(json.loads((child / "audit.json").read_text()))
             with gzip.open(child / "selected_ids.json.gz", "rt") as file:
                 selections.extend(json.load(file))
             for path in (child / "predictions").glob("*.csv.gz"):
                 shutil.copyfile(path, out / "predictions" / path.name)
+            for path in (child / "validation_scores").glob("*.csv.gz"):
+                shutil.copyfile(path, out / "validation_scores" / path.name)
         (out / "audit.json").write_text(_json(audit))
         _write_gzip(out / "selected_ids.json.gz", selections)
         _plot_rocs(curves, out)

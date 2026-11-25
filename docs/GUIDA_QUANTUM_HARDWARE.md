@@ -113,6 +113,16 @@ Decisione: **GO** per la campagna. Limiti: punti sintetici, circuito poco profon
 Stima ~315 s su 587 disponibili. Tutti i job partono in un solo Batch, sulla stessa calibrazione. Per ogni esperimento lo
 script salva anche L0 e L2 degli stessi punti: sono il confronto per l'hardware e il primo deliverable di Q-06.
 
+**Preprocessing per il confronto E-03/E-04.** E-03 mantiene scaler specifici
+dei fold: quello interno è addestrato sui soli ID del training interno, mentre
+quello finale è addestrato sugli ID del training esterno. I punti hardware
+usano invece lo scaler del training P2 seed 0 definito in
+`configs/hardware_frozen.yaml` e applicato da
+`scripts/qpu_campaign.py::gravityspy_features`. Questa differenza va tenuta
+presente nel confronto. Per un confronto diretto simulato/hardware sugli stessi
+punti, applicare lo stesso scaler P2 seed-0 e lo stesso preprocessing usati per
+i punti hardware.
+
 ## 8. Come si esegue
 
 ```bash
