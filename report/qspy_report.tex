@@ -1,0 +1,95 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[hidelinks]{hyperref}
+\setlist{itemsep=2pt,topsep=4pt}
+\captionsetup{font=small,labelfont=bf}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+\newcommand{\dire}[1]{\par\noindent\textbf{In una frase.} #1\par}
+\newcommand{\attenzione}[1]{\par\noindent\textbf{Limiti.} #1\par}
+
+\title{\textbf{Q-Spy}: kernel quantistici proiettati, consapevoli della concentrazione,\\
+per la classificazione few-shot e la novelty detection dei glitch LIGO\\[4pt]\large Report tecnico (L-06)}
+\author{Team Q-Spy}
+\date{25 novembre 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Studiamo se un kernel quantistico proiettato, calcolato su un processore IBM reale, aiuta a classificare
+famiglie di glitch di LIGO con pochi esempi e a riconoscere una famiglia mai vista (Fast Scattering). Le 7 feature
+Omicron di ogni glitch sono codificate in un circuito di 8 qubit con entanglement; i vettori di Bloch misurati
+definiscono il kernel, usato da SVM e One-Class SVM classiche. In simulazione esatta il kernel proiettato si concentra
+meno del fidelity kernel e la bandwidth della codifica è la variabile dominante (KTA 0,534 contro 0,357). Su
+\texttt{ibm\_kingston}, con mitigazione, l’errore dei vettori di Bloch è pari al rumore di campionamento (0,030) e
+l’allineamento con le classi resta entro 0,006 da quello esatto (H4 supportata). Nel few-shot il kernel proiettato è
+alla pari con un RBF classico; nella novelty detection l’RBF classico è migliore di 0,026 di AUROC (H3 non supportata).
+Configurazione, ipotesi e sottoinsiemi hardware sono stati fissati prima delle misure (tag \texttt{hw-freeze}); ogni
+numero è riconducibile a uno script e a un run (appendice~\ref{app:numeri}).
+\end{abstract}
+
+\section{Introduzione}
+I glitch sono transitori di rumore non gaussiano nei rivelatori LIGO che degradano la sensibilità e possono imitare
+segnali. Gravity Spy li classifica con reti convoluzionali e citizen science (Zevin et al.\ 2017), ma le famiglie nuove,
+come Fast Scattering in O3, emergono dal lavoro umano (Soni et al.\ 2021; Glanzer et al.\ 2023). Due problemi restano
+aperti: imparare una famiglia con pochi esempi e segnalare una famiglia sconosciuta. Sul lato quantistico, i kernel
+quantistici (Havlíček et al.\ 2019; Schuld e Killoran 2019) soffrono di concentrazione esponenziale (Thanasilp et al.\
+2024); i kernel proiettati la attenuano (Huang et al.\ 2021), ma confronti accurati con baseline classiche spesso non
+mostrano vantaggi (Bowles et al.\ 2024) e i modelli non concentrati possono essere simulabili (Cerezo et al.\ 2023).
+Questo report misura entrambi gli aspetti su dati veri e su hardware reale, con un protocollo pre-registrato.
+
+\section{Dati e metodo}
+\textbf{Dati.} Catalogo Gravity Spy O1--O3b curato (D-02): confidenza $\geq0{,}9$, duplicati tra rivelatori entro
+0,1\,s rimossi; 318.801 glitch in 8 famiglie, Fast Scattering solo in O3 e quasi tutta su L1. Split congelati e
+verificati con hash (D-04): P1 few-shot ($k\in\{5,10,20,50\}$), P2 novelty (una famiglia nascosta, Fast Scattering
+nel caso principale).
+
+\textbf{Feature e codifica.} Sette feature Omicron (durata, frequenza di picco e centrale, banda, ampiezza, SNR,
+fattore Q): $\log_{10}$, RobustScaler stimato sul solo training, clipping in $[-1,1]$. Angoli $\theta=s\pi\tilde x$;
+per strato $R_Y(\theta)R_Z(\theta)$ su ogni qubit (feature $q\bmod7$) e catena di CZ a mattoni; 2 strati, 8 qubit,
+profondità a 2 qubit 4 su \texttt{ibm\_kingston}.
+
+\textbf{Kernel e modelli.} $k_P(x,x')=\exp(-\tfrac{\gamma}{n}\sum_q\lVert b_q(x)-b_q(x')\rVert^2)$ sui vettori di Bloch;
+confronto con RBF sulle feature, Isolation Forest e LOF. Budget di ricerca uguale per i modelli confrontati;
+$\gamma=c/\text{mediana}$ delle distanze quadratiche, $c\in\mathrm{logspace}(-2,2,9)$. Novelty: selezione
+leave-one-family-out annidata sulle famiglie note, soglia al 5\% di falsi allarmi sui noti.
+
+\textbf{Livelli.} L0 statevector, L1 1112 shot, L2 emulatore con il modello di rumore di \texttt{ibm\_kingston}, HW
+\texttt{ibm\_kingston} via Qiskit Runtime EstimatorV2 con TREX, twirling e dynamical decoupling.
+
+\input{risultati}
+
+\section{Discussione e limiti}
+\textbf{Positivo.} La pipeline porta dati astrofisici reali su un chip IBM con costo e rumore previsti in anticipo;
+il kernel proiettato evita la concentrazione nel regime studiato; il rumore hardware mitigato non riduce in modo
+rilevante l’informazione sulle classi (H4) né la capacità di trovare Fast Scattering (anteprima E-04).
+
+\textbf{Negativo.} Nessun vantaggio sul classico: pari nel few-shot (anteprima, H1), peggiore nella novelty (H3).
+Coerente con Bowles et al.\ (2024) e con l’osservazione di Cerezo et al.\ (2023): a 8 qubit e con 7 feature il modello
+è simulabile e un RBF ben tarato è un avversario fortissimo.
+
+\textbf{Limiti.} Etichette ML di Gravity Spy, non verità fisica; Fast Scattering confusa con il rivelatore L1 e con O3;
+E-03 con cap di 2048/2048/8192 glitch per caso e intervalli condizionati al test; budget di ricerca della novelty come
+tetto (54/60/15), da approvare come deviazione; anteprime few-shot (5 seed) ed E-04 (15 positivi, $\gamma$ non
+ritarato); correzione di Holm su H1--H4 non ancora applicata; H2 non testata; un solo chip in un solo giorno.
+
+\appendix
+\input{appendice}
+
+\end{document}
