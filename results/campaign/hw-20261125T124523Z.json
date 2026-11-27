@@ -1,0 +1,209 @@
+{
+  "run_id": "hw-20261125T124523Z",
+  "frozen": {
+    "n_qubits": 8,
+    "layers": 2,
+    "s": 0.1778,
+    "precision": 0.03,
+    "concentration_qubits": [
+      4,
+      8,
+      12
+    ],
+    "budget_s": 587,
+    "device": "ibm_kingston",
+    "scaler_protocol": "P2",
+    "scaler_seed": 0
+  },
+  "estimated_qpu_s": 412.8487999999999,
+  "experiments": [
+    {
+      "experiment": "drift-start",
+      "points": 5,
+      "n_qubits": 8,
+      "mitigation": true,
+      "n_circuits": 15,
+      "estimated_qpu_s": 10.189400000000001,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.029560656398268558,
+        "corr": 0.9972771535002195
+      },
+      "usage_s": 8,
+      "job_ids": [
+        "dc3dh7thdvas73bnld60"
+      ],
+      "vs_L0": {
+        "rmse": 0.030849395282642453,
+        "corr": 0.9974142279066701
+      },
+      "vs_L2": {
+        "rmse": 0.04068554003999629,
+        "corr": 0.9947340116728061
+      }
+    },
+    {
+      "experiment": "main",
+      "points": 120,
+      "n_qubits": 8,
+      "mitigation": true,
+      "n_circuits": 360,
+      "estimated_qpu_s": 184.7456,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.02972674212380206,
+        "corr": 0.997536460801638
+      },
+      "usage_s": 124,
+      "job_ids": [
+        "dc3dhcuq4uuc73a6og1g"
+      ],
+      "vs_L0": {
+        "rmse": 0.029882303238899253,
+        "corr": 0.9976273530356361
+      },
+      "vs_L2": {
+        "rmse": 0.041587099383805726,
+        "corr": 0.9952408028226669
+      }
+    },
+    {
+      "experiment": "control",
+      "points": 40,
+      "n_qubits": 8,
+      "mitigation": false,
+      "n_circuits": 120,
+      "estimated_qpu_s": 63.315200000000004,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.03086879727781356,
+        "corr": 0.9973363755907931
+      },
+      "usage_s": 37,
+      "job_ids": [
+        "dc3dimlhdvas73bnlfmg"
+      ],
+      "vs_L0": {
+        "rmse": 0.03869976924035281,
+        "corr": 0.9965270888731474
+      },
+      "vs_L2": {
+        "rmse": 0.04782091765590355,
+        "corr": 0.9940596757699742
+      }
+    },
+    {
+      "experiment": "concentration-n4",
+      "points": 30,
+      "n_qubits": 4,
+      "mitigation": true,
+      "n_circuits": 90,
+      "estimated_qpu_s": 48.1364,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.029787874077423466,
+        "corr": 0.9976597983621783
+      },
+      "usage_s": 33,
+      "job_ids": [
+        "dc3djelhdvas73bnlgn0"
+      ],
+      "vs_L0": {
+        "rmse": 0.03181055502091198,
+        "corr": 0.9975736820000638
+      },
+      "vs_L2": {
+        "rmse": 0.04260884657786684,
+        "corr": 0.9953483348168116
+      }
+    },
+    {
+      "experiment": "concentration-n8",
+      "points": 30,
+      "n_qubits": 8,
+      "mitigation": true,
+      "n_circuits": 90,
+      "estimated_qpu_s": 48.1364,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.02999870959304741,
+        "corr": 0.9975246872981098
+      },
+      "usage_s": 33,
+      "job_ids": [
+        "dc3djqinj2vs73di4hf0"
+      ],
+      "vs_L0": {
+        "rmse": 0.02984986476305829,
+        "corr": 0.9976981240277573
+      },
+      "vs_L2": {
+        "rmse": 0.040723044421007035,
+        "corr": 0.9953265085096229
+      }
+    },
+    {
+      "experiment": "concentration-n12",
+      "points": 30,
+      "n_qubits": 12,
+      "mitigation": true,
+      "n_circuits": 90,
+      "estimated_qpu_s": 48.1364,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.03017985207420176,
+        "corr": 0.9974448487254202
+      },
+      "usage_s": 33,
+      "job_ids": [
+        "dc3dk6ds2omc738dcmcg"
+      ],
+      "vs_L0": {
+        "rmse": 0.030483000306658483,
+        "corr": 0.9975418474023523
+      },
+      "vs_L2": {
+        "rmse": 0.04113411335330258,
+        "corr": 0.9953134691533913
+      }
+    },
+    {
+      "experiment": "drift-end",
+      "points": 5,
+      "n_qubits": 8,
+      "mitigation": true,
+      "n_circuits": 15,
+      "estimated_qpu_s": 10.189400000000001,
+      "two_qubit_depth": 4,
+      "L2_vs_L0": {
+        "rmse": 0.028772169871133492,
+        "corr": 0.9973845720889737
+      },
+      "usage_s": 8,
+      "job_ids": [
+        "dc3dkj6q4uuc73a6okk0"
+      ],
+      "vs_L0": {
+        "rmse": 0.030844354294945288,
+        "corr": 0.9973089542977533
+      },
+      "vs_L2": {
+        "rmse": 0.04064856156342232,
+        "corr": 0.9952143705865978
+      }
+    }
+  ],
+  "ledger_rows": [
+    "| 2026-11-25 | H-02 | | ibm_kingston | drift-start, 5 points, 8 qubits | 10.2 | 8 | dc3dh7thdvas73bnld60 |",
+    "| 2026-11-25 | H-02 | | ibm_kingston | main, 120 points, 8 qubits | 184.7 | 124 | dc3dhcuq4uuc73a6og1g |",
+    "| 2026-11-25 | H-02 | | ibm_kingston | control, 40 points, 8 qubits | 63.3 | 37 | dc3dimlhdvas73bnlfmg |",
+    "| 2026-11-25 | H-02 | | ibm_kingston | concentration-n4, 30 points, 4 qubits | 48.1 | 33 | dc3djelhdvas73bnlgn0 |",
+    "| 2026-11-25 | H-02 | | ibm_kingston | concentration-n8, 30 points, 8 qubits | 48.1 | 33 | dc3djqinj2vs73di4hf0 |",
+    "| 2026-11-25 | H-02 | | ibm_kingston | concentration-n12, 30 points, 12 qubits | 48.1 | 33 | dc3dk6ds2omc738dcmcg |",
+    "| 2026-11-25 | H-02 | | ibm_kingston | drift-end, 5 points, 8 qubits | 10.2 | 8 | dc3dkj6q4uuc73a6okk0 |"
+  ],
+  "drift": {
+    "rmse": 0.03442395034289475,
+    "corr": 0.9961174141708831
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "tier": "L2",
+  "embed_config": {
+    "n_qubits": 12,
+    "layers": 2,
+    "s": 0.1778,
+    "entangle": true
+  },
+  "n_points": 30,
+  "precision": 0.03,
+  "backend_name": "fake_kingston",
+  "layout": [
+    52,
+    53,
+    54,
+    55,
+    59,
+    75,
+    74,
+    73,
+    79,
+    93,
+    94,
+    95
+  ],
+  "two_qubit_depth": 4,
+  "run_id": "hw-20261125T124523Z-concentration-n12-L2",
+  "created_at": "2026-11-25T12:46:07.651811+00:00",
+  "git_commit": "82f4dfc866c071b12663856bcb50812614e0ad4c"
+}
