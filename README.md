@@ -4,7 +4,7 @@
 
 Q-Spy is an end-to-end research pipeline developed for the **Qiskit Fall Fest 2026** that uses an IBM Quantum processor (`ibm_kingston`) as a feature extractor for LIGO glitch classification, rigorously benchmarking whether quantum geometry adds value over well-tuned classical baselines.
 
-**Authors:** Mirko Mangano, Leonardo Mirabella,Andrea Favata, Michele Bellavia, Reda Brucato.
+**Authors:** Mirko Mangano, Leonardo Mirabella, Andrea Favata, Michele Bellavia, Reda Brucato.
 
 ---
 
@@ -123,9 +123,9 @@ data/features/  ──▶  quantum/  ──▶  kernels/  ──▶  models/
 ```
 
 ## Documentation & Commands
-Build and serve the documentation locally:
+Build and serve locally:
 ```bash
-$ pip install -r requirements-docs.txt && python -m mkdocs serve
+$ make install
 ```
 Regenerate all figures:
 ```bash
